@@ -1,7 +1,10 @@
 <?php
 namespace gmo\database;
 
-abstract class AbstractDatabase {
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+
+abstract class AbstractDatabase implements LoggerAwareInterface {
 
     /**
      * @var \mysqli
@@ -12,6 +15,8 @@ abstract class AbstractDatabase {
     private $username;
     private $password;
     private $database;
+
+	private $logger;
 
 	/**
 	 * @param $host
@@ -24,6 +29,8 @@ abstract class AbstractDatabase {
 		$this->username = $username;
 		$this->password = $password;
 		$this->database = $database;
+
+		$this->logger = new ConsoleLogger();
 
         $this->openConnection();
 	}
@@ -286,11 +293,11 @@ abstract class AbstractDatabase {
 	protected function runScriptsFromDir($path) {
 		$path = realpath($path);
 
-        $this->log("========================");
-		$this->log("Running scripts in:   ". $path . "/*.sql");
+        $this->logger->info("========================");
+		$this->logger->info("Running scripts in:   ". $path . "/*.sql");
 		$files = glob($path . "/*.sql");
-		$this->log("Number scripts found: " . count($files));
-        $this->log("========================");
+		$this->logger->info("Number scripts found: " . count($files));
+        $this->logger->info("========================");
 
 		foreach ($files as $file) {
 			$data = file_get_contents($file);
@@ -310,7 +317,7 @@ abstract class AbstractDatabase {
 				if (trim($query) == "") {
 					continue;
 				}
-				$this->log("Executing query: " . $query);
+				$this->logger->info("Executing query: " . $query);
                 $this->reConnect();
 				$result = $this->db_user->query($query);
 
@@ -318,22 +325,27 @@ abstract class AbstractDatabase {
                 $errorMsg = $this->db_user->error;
                 if( $errno == 0 )
                 {
-                   $this->log( "Execution: SUCCESS");
+                   $this->logger->info( "Execution: SUCCESS");
                 }
                 elseif( $errno = 1060 ) // Duplicate column
                 {
-                    $this->log( "Execution: WARNING: " . $errorMsg );
+                    $this->logger->info( "Execution: WARNING: " . $errorMsg );
                 }
                 else
                 {
-                    $this->log( "Execution: ERROR: " . $errorMsg );
+                    $this->logger->info( "Execution: ERROR: " . $errorMsg );
                 }
-                $this->log( "============" );
+                $this->logger->info( "============" );
 			}
 		}
 	}
 
-	protected function log($msg) {
-		echo $msg . "\n";
+	/**
+	 * Sets a logger instance on the object
+	 * @param LoggerInterface $logger
+	 * @return null
+	 */
+	public function setLogger( LoggerInterface $logger ) {
+		$this->logger = $logger;
 	}
 }
