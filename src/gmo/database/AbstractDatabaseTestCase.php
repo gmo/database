@@ -3,13 +3,34 @@ namespace gmo\database;
 
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
-	protected $iniPrefix = "";
-
 	# Only instantiate connection once for test clean-up/fixture load
 	static private $pdo = null;
 	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
 	private $conn = null;
 
+	/**
+	 * Should return the database host
+	 * @return string
+	 */
+	protected abstract function getHost();
+
+	/**
+	 * Should return the database username
+	 * @return string
+	 */
+	protected abstract function getUsername();
+
+	/**
+	 * Should return the database password
+	 * @return string
+	 */
+	protected abstract function getPassword();
+
+	/**
+	 * Should return the database schema
+	 * @return string
+	 */
+	protected abstract function getDatabase();
 
 	/**
 	 * Returns the test database connection.
@@ -19,11 +40,9 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 		if ( $this->conn === null ) {
 			if ( self::$pdo == null ) {
 				self::$pdo =
-					new \PDO("mysql:host=" .
-					         Config::getDatabaseHost() .
-					         ";dbname=" .
-					         Config::getDatabaseSchema( $this->iniPrefix ), Config::getDatabaseUsername(
-					         ), Config::getDatabasePassword());
+					new \PDO("mysql:host=" . $this->getHost() . ";dbname=" . $this->getDatabase(),
+							$this->getUsername(),
+							$this->getPassword());
 			}
 			$this->conn = $this->createDefaultDBConnection( self::$pdo, "mysql" );
 		}
