@@ -1,5 +1,5 @@
 <?php
-namespace gmo\database;
+namespace GMO\Database;
 
 use Psr\Log\AbstractLogger;
 

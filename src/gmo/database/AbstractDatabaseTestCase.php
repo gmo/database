@@ -1,5 +1,5 @@
 <?php
-namespace gmo\database;
+namespace GMO\Database;
 
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
