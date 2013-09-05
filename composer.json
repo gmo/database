@@ -1,5 +1,6 @@
 {
 	"name": "gmo/database",
+	"description": "Common database abstraction providing simple query methods",
 	"require": {
 		"psr/log": "1.0.0"
 	},

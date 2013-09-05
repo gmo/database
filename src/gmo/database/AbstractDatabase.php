@@ -40,8 +40,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * of the first row of results from query.
 	 * @param string $query
 	 * @param mixed $params variable number
-	 * @throws \Exception Error preparing statement
-	 * @return array
+	 * @throws \Exception if query fails
+	 * @return mixed
 	 */
 	protected function singleValue($query, $params=null) {
 		# execute
@@ -56,7 +56,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * of results from query.
 	 * @param string $query
 	 * @param mixed $params variable number
-	 * @throws \Exception Error preparing statement
+	 * @throws \Exception if query fails
 	 * @return array
 	 */
 	protected function singleRow($query, $params=null) {
@@ -73,7 +73,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Executes a query wrapped in no lock statement
 	 * @param string $query
 	 * @param mixed $params variable number
-	 * @throws \Exception Error preparing statement
+	 * @throws \Exception if query fails
 	 * @return array
 	 */
 	protected function selectWithNoLock($query, $params=null) {
@@ -84,7 +84,14 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		return $results;
 	}
 
-    protected function insertAndReturnId($query, $params=null) {
+	/**
+	 * Inserts a row and returns the id
+	 * @param string $query
+	 * @param mixed  $params variable number
+	 * @throws \Exception if query fails
+	 * @return array
+	 */
+	protected function insertAndReturnId($query, $params=null) {
         $this->db_user->query("start transaction");
         call_user_func_array(array($this, "execute"), func_get_args());
         $id = $this->singleValue("select last_insert_id() as id");
@@ -97,8 +104,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Returns a list of key/value arrays of results
 	 * from query.
 	 * @param string $query
-	 * @param mixed $params variable number
-	 * @throws \Exception Error preparing statement
+	 * @param mixed  $params variable number
+	 * @throws \Exception if query fails
 	 * @return array
 	 */
 	protected function execute($query, $params=null) {
@@ -142,7 +149,12 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		return $results;
 	}
 
-    protected function reConnect()
+	/**
+	 * If ping returns false or throws an exception
+	 * it will try to reopen connection
+	 * @throws \Exception if openConnection fails
+	 */
+	protected function reConnect()
     {
         try
         {
@@ -157,7 +169,11 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
         }
     }
 
-    private function openConnection()
+	/**
+	 * Creates \mysqli connection
+	 * @throws \Exception if invalid connection
+	 */
+	private function openConnection()
     {
         $this->db_user = new \mysqli( $this->host, $this->username, $this->password, $this->database );
 
