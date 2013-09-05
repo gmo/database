@@ -129,7 +129,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 
 		# Execute query
-		$stmt->execute();
+		if( !$stmt->execute() ) {
+			throw new \Exception( "MySql Error - Code: " . $stmt->errno . ". " . $stmt->error );
+		}
+
 
 		# Get results from statement
 		$results = $this->getResultsFromStmt($stmt);
@@ -290,7 +293,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Runs sql scripts to setup database tables
 	 * @param string $path directory without ending slash
 	 */
-	protected function runScriptsFromDir($path) {
+	public function runScriptsFromDir($path) {
 		$path = realpath($path);
 
         $this->logger->info("========================");
