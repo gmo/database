@@ -3,11 +3,6 @@ namespace GMO\Database;
 
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
-	# Only instantiate connection once for test clean-up/fixture load
-	static private $pdo = null;
-	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
-	private $conn = null;
-
 	/**
 	 * Should return the database host
 	 * @return string
@@ -67,4 +62,9 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 
 		return $dataSet;
 	}
+
+	# Only instantiate connection once for test clean-up/fixture load
+	static private $pdo = null;
+	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
+	private $conn = null;
 }

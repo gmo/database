@@ -19,20 +19,63 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	private $logger;
 
 	/**
-	 * @param $host
-	 * @param $username
-	 * @param $password
-	 * @param $database
+	 * Runs sql scripts to setup database tables
+	 * @param string $path directory without ending slash
 	 */
-	function __construct( $host, $username, $password, $database ) {
-		$this->host = $host;
-		$this->username = $username;
-		$this->password = $password;
-		$this->database = $database;
+	public function runScriptsFromDir( $path ) {
+		$path = realpath( $path );
 
-		$this->logger = new ConsoleLogger();
+		$this->logger->info( "========================" );
+		$this->logger->info( "Running scripts in:   " . $path . "/*.sql" );
+		$files = glob( $path . "/*.sql" );
+		$this->logger->info( "Number scripts found: " . count( $files ) );
+		$this->logger->info( "========================" );
 
-		$this->openConnection();
+		foreach ( $files as $file ) {
+			$data = file_get_contents( $file );
+
+			// Remove C style and inline comments
+			$comment_patterns = array(
+				'/\/\*.*(\n)*.*(\*\/)?/', //C comments
+				'/\s*--.*\n/', //inline comments start with --
+				'/\s*#.*\n/', //inline comments start with #
+			);
+			$data = preg_replace( $comment_patterns, "\n", $data );
+
+			//Retrieve sql statements
+			$stmts = explode( ";\n", $data );
+			$stmts = preg_replace( "/\\s/", " ", $stmts );
+
+			foreach ( $stmts as $query ) {
+				if ( trim( $query ) == "" ) {
+					continue;
+				}
+				$this->logger->info( "Executing query: " . $query );
+				$this->reConnect();
+				$result = $this->db_user->query( $query );
+
+				$errno = $this->db_user->errno;
+				$errorMsg = $this->db_user->error;
+				if ( $errno == 0 ) {
+					$this->logger->info( "Execution: SUCCESS" );
+				} elseif ( $errno = 1060 ) // Duplicate column
+				{
+					$this->logger->info( "Execution: WARNING: " . $errorMsg );
+				} else {
+					$this->logger->info( "Execution: ERROR: " . $errorMsg );
+				}
+				$this->logger->info( "============" );
+			}
+		}
+	}
+
+	/**
+	 * Sets a logger instance on the object
+	 * @param LoggerInterface $logger
+	 * @return null
+	 */
+	public function setLogger( LoggerInterface $logger ) {
+		$this->logger = $logger;
 	}
 
 	/**
@@ -161,6 +204,23 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		} catch ( \Exception $ex ) {
 			$this->openConnection();
 		}
+	}
+
+	/**
+	 * @param $host
+	 * @param $username
+	 * @param $password
+	 * @param $database
+	 */
+	function __construct( $host, $username, $password, $database ) {
+		$this->host = $host;
+		$this->username = $username;
+		$this->password = $password;
+		$this->database = $database;
+
+		$this->logger = new ConsoleLogger();
+
+		$this->openConnection();
 	}
 
 	/**
@@ -293,65 +353,5 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 		$meta->free();
 		return $results;
-	}
-
-	/**
-	 * Runs sql scripts to setup database tables
-	 * @param string $path directory without ending slash
-	 */
-	public function runScriptsFromDir( $path ) {
-		$path = realpath( $path );
-
-		$this->logger->info( "========================" );
-		$this->logger->info( "Running scripts in:   " . $path . "/*.sql" );
-		$files = glob( $path . "/*.sql" );
-		$this->logger->info( "Number scripts found: " . count( $files ) );
-		$this->logger->info( "========================" );
-
-		foreach ( $files as $file ) {
-			$data = file_get_contents( $file );
-
-			// Remove C style and inline comments
-			$comment_patterns = array(
-				'/\/\*.*(\n)*.*(\*\/)?/', //C comments
-				'/\s*--.*\n/', //inline comments start with --
-				'/\s*#.*\n/', //inline comments start with #
-			);
-			$data = preg_replace( $comment_patterns, "\n", $data );
-
-			//Retrieve sql statements
-			$stmts = explode( ";\n", $data );
-			$stmts = preg_replace( "/\\s/", " ", $stmts );
-
-			foreach ( $stmts as $query ) {
-				if ( trim( $query ) == "" ) {
-					continue;
-				}
-				$this->logger->info( "Executing query: " . $query );
-				$this->reConnect();
-				$result = $this->db_user->query( $query );
-
-				$errno = $this->db_user->errno;
-				$errorMsg = $this->db_user->error;
-				if ( $errno == 0 ) {
-					$this->logger->info( "Execution: SUCCESS" );
-				} elseif ( $errno = 1060 ) // Duplicate column
-				{
-					$this->logger->info( "Execution: WARNING: " . $errorMsg );
-				} else {
-					$this->logger->info( "Execution: ERROR: " . $errorMsg );
-				}
-				$this->logger->info( "============" );
-			}
-		}
-	}
-
-	/**
-	 * Sets a logger instance on the object
-	 * @param LoggerInterface $logger
-	 * @return null
-	 */
-	public function setLogger( LoggerInterface $logger ) {
-		$this->logger = $logger;
 	}
 }
