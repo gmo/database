@@ -6,15 +6,15 @@ use Psr\Log\LoggerInterface;
 
 abstract class AbstractDatabase implements LoggerAwareInterface {
 
-    /**
-     * @var \mysqli
-     */
-    private $db_user;
+	/**
+	 * @var \mysqli
+	 */
+	private $db_user;
 
-    private $host;
-    private $username;
-    private $password;
-    private $database;
+	private $host;
+	private $username;
+	private $password;
+	private $database;
 
 	private $logger;
 
@@ -24,30 +24,30 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param $password
 	 * @param $database
 	 */
-	function __construct($host, $username, $password, $database) {
-		$this->host     = $host;
+	function __construct( $host, $username, $password, $database ) {
+		$this->host = $host;
 		$this->username = $username;
 		$this->password = $password;
 		$this->database = $database;
 
 		$this->logger = new ConsoleLogger();
 
-        $this->openConnection();
+		$this->openConnection();
 	}
 
 	/**
 	 * Returns a single value from the first column
 	 * of the first row of results from query.
 	 * @param string $query
-	 * @param mixed $params variable number
+	 * @param mixed  $params variable number
 	 * @throws \Exception if query fails
 	 * @return mixed
 	 */
-	protected function singleValue($query, $params=null) {
+	protected function singleValue( $query, $params = null ) {
 		# execute
-		$result = call_user_func_array(array($this, "singleRow"), func_get_args());
+		$result = call_user_func_array( array( $this, "singleRow" ), func_get_args() );
 		# return first value
-		$value = array_shift($result);
+		$value = array_shift( $result );
 		return $value;
 	}
 
@@ -55,15 +55,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Returns a key/value array of the first row
 	 * of results from query.
 	 * @param string $query
-	 * @param mixed $params variable number
+	 * @param mixed  $params variable number
 	 * @throws \Exception if query fails
 	 * @return array
 	 */
-	protected function singleRow($query, $params=null) {
+	protected function singleRow( $query, $params = null ) {
 		# execute
-		$results = call_user_func_array(array($this, "execute"), func_get_args());
+		$results = call_user_func_array( array( $this, "execute" ), func_get_args() );
 		# return results
-		if (empty($results)) {
+		if ( empty($results) ) {
 			return array();
 		}
 		return $results[0];
@@ -72,14 +72,14 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	/**
 	 * Executes a query wrapped in no lock statement
 	 * @param string $query
-	 * @param mixed $params variable number
+	 * @param mixed  $params variable number
 	 * @throws \Exception if query fails
 	 * @return array
 	 */
-	protected function selectWithNoLock($query, $params=null) {
-		$this->db_user->query("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED");
-		$results = call_user_func_array(array($this, "execute"), func_get_args());
-		$this->db_user->query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+	protected function selectWithNoLock( $query, $params = null ) {
+		$this->db_user->query( "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED" );
+		$results = call_user_func_array( array( $this, "execute" ), func_get_args() );
+		$this->db_user->query( "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ" );
 
 		return $results;
 	}
@@ -91,16 +91,16 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @throws \Exception if query fails
 	 * @return array
 	 */
-	protected function insertAndReturnId($query, $params=null) {
-        $this->db_user->query("start transaction");
-        call_user_func_array(array($this, "execute"), func_get_args());
-        $id = $this->singleValue("select last_insert_id() as id");
-        $this->db_user->query("commit");
+	protected function insertAndReturnId( $query, $params = null ) {
+		$this->db_user->query( "start transaction" );
+		call_user_func_array( array( $this, "execute" ), func_get_args() );
+		$id = $this->singleValue( "select last_insert_id() as id" );
+		$this->db_user->query( "commit" );
 
-        return $id;
-    }
+		return $id;
+	}
 
-    /**
+	/**
 	 * Returns a list of key/value arrays of results
 	 * from query.
 	 * @param string $query
@@ -108,41 +108,40 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @throws \Exception if query fails
 	 * @return array
 	 */
-	protected function execute($query, $params=null) {
+	protected function execute( $query, $params = null ) {
 		# Get query and params
 		$params = func_get_args();
-		$query = array_shift($params);
+		$query = array_shift( $params );
 
-		$query = preg_replace("/[\t|\n| ]+/", " ", $query);
+		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
 
 		# Update query and params with params that have arrays
-		list($query, $params) = $this->expandQueryParams($query, $params);
+		list($query, $params) = $this->expandQueryParams( $query, $params );
 
-        $this->reConnect();
+		$this->reConnect();
 
 		# Create statement
-		$stmt = $this->db_user->prepare($query);
-		if (!$stmt) {
+		$stmt = $this->db_user->prepare( $query );
+		if ( !$stmt ) {
 			throw new \Exception("Error preparing statement. Query: \"$query\"");
 		}
 
-		if (!empty($params)) {
+		if ( !empty($params) ) {
 			# Get types for bind_param
-			$type = $this->getParamTypes($params);
-			array_unshift($params, $type);
+			$type = $this->getParamTypes( $params );
+			array_unshift( $params, $type );
 
 			# Bind variables to the statement
-			call_user_func_array(array($stmt, "bind_param"), $this->refValues($params));
+			call_user_func_array( array( $stmt, "bind_param" ), $this->refValues( $params ) );
 		}
 
 		# Execute query
-		if( !$stmt->execute() ) {
-			throw new \Exception( "MySql Error - Code: " . $stmt->errno . ". " . $stmt->error );
+		if ( !$stmt->execute() ) {
+			throw new \Exception("MySql Error - Code: " . $stmt->errno . ". " . $stmt->error);
 		}
 
-
 		# Get results from statement
-		$results = $this->getResultsFromStmt($stmt);
+		$results = $this->getResultsFromStmt( $stmt );
 
 		$stmt->close();
 
@@ -154,53 +153,45 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * it will try to reopen connection
 	 * @throws \Exception if openConnection fails
 	 */
-	protected function reConnect()
-    {
-        try
-        {
-            if( !$this->db_user->ping() )
-            {
-                $this->openConnection();
-            }
-        }
-        catch( \Exception $ex )
-        {
-            $this->openConnection();
-        }
-    }
+	protected function reConnect() {
+		try {
+			if ( !$this->db_user->ping() ) {
+				$this->openConnection();
+			}
+		} catch ( \Exception $ex ) {
+			$this->openConnection();
+		}
+	}
 
 	/**
 	 * Creates \mysqli connection
 	 * @throws \Exception if invalid connection
 	 */
-	private function openConnection()
-    {
-        $this->db_user = new \mysqli( $this->host, $this->username, $this->password, $this->database );
+	private function openConnection() {
+		$this->db_user = new \mysqli($this->host, $this->username, $this->password, $this->database);
 
-        if( $this->db_user == null || !$this->db_user->ping() )
-        {
-            throw new \Exception( "Unable to establish connection to database" );
-        }
-    }
+		if ( $this->db_user == null || !$this->db_user->ping() ) {
+			throw new \Exception("Unable to establish connection to database");
+		}
+	}
 
-    /**
+	/**
 	 * Makes a string based on param types
 	 * for the bind_param function
 	 * @param array $params
 	 * @return string
 	 */
-	private function getParamTypes($params) {
-		$types = '';                        //initial sting with types
-		foreach($params as $param)
-		{
-			if(is_int($param)) {
-				$types .= 'i';              //integer
-			} elseif (is_float($param)) {
-				$types .= 'd';              //double
-			} elseif (is_string($param)) {
-				$types .= 's';              //string
+	private function getParamTypes( $params ) {
+		$types = ''; //initial sting with types
+		foreach ( $params as $param ) {
+			if ( is_int( $param ) ) {
+				$types .= 'i'; //integer
+			} elseif ( is_float( $param ) ) {
+				$types .= 'd'; //double
+			} elseif ( is_string( $param ) ) {
+				$types .= 's'; //string
 			} else {
-				$types .= 'b';              //blob and unknown
+				$types .= 'b'; //blob and unknown
 			}
 		}
 		return $types;
@@ -211,11 +202,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param array $arr
 	 * @return array
 	 */
-	private function refValues($arr) {
+	private function refValues( $arr ) {
 		$refs = array();
-		foreach ($arr as $key => $value)
-		{
-			$refs[$key] = &$arr[$key];
+		foreach ( $arr as $key => $value ) {
+			$refs[$key] = & $arr[$key];
 		}
 		return $refs;
 	}
@@ -225,22 +215,22 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * array and updates query string with the correct number
 	 * of question marks for the bind_param function
 	 * @param string $query
-	 * @param array $params
+	 * @param array  $params
 	 * @return array (query, params)
 	 */
-	private function expandQueryParams($query, $params) {
+	private function expandQueryParams( $query, $params ) {
 		$newParams = array();
 		# Check each param for arrays
-		foreach ($params as $param) {
-			if (is_array($param)) {
+		foreach ( $params as $param ) {
+			if ( is_array( $param ) ) {
 				# Get string of question marks for query
-				$marks = $this->getQuestionMarks($param);
+				$marks = $this->getQuestionMarks( $param );
 
 				# Replace the first occurrence of "??" with correct number of "?"
-				$query = preg_replace("/\\?\\?/", $marks, $query, 1);
+				$query = preg_replace( "/\\?\\?/", $marks, $query, 1 );
 
 				# Add each item in array to new params
-				foreach ($param as $item) {
+				foreach ( $param as $item ) {
 					$newParams[] = $item;
 				}
 			} else {
@@ -248,20 +238,20 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				$newParams[] = $param;
 			}
 		}
-		return array($query, $newParams);
+		return array( $query, $newParams );
 	}
 
 	/**
 	 * Returns a string of question marks based on
 	 * number of variables in the array passed in
 	 */
-	private function getQuestionMarks($params) {
+	private function getQuestionMarks( $params ) {
 		$string = "";
-		for ($i=0; $i < count($params); $i++) {
+		for ( $i = 0; $i < count( $params ); $i++ ) {
 			$string .= "?, ";
 		}
 		# remove the last ", "
-		$string = substr($string, 0, -2);
+		$string = substr( $string, 0, -2 );
 
 		return $string;
 	}
@@ -271,90 +261,87 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param \mysqli_stmt $stmt
 	 * @return array
 	 */
-	private function getResultsFromStmt($stmt) {
+	private function getResultsFromStmt( $stmt ) {
 		# Get metadata for field names
 		$meta = $stmt->result_metadata();
 
 		# Return no results
-		if (!$meta) {
+		if ( !$meta ) {
 			return array();
 		}
 
 		# Dynamically create an array of variables to use to bind the results
 		$fields = array();
-		while ($field = $meta->fetch_field()) {
+		while ( $field = $meta->fetch_field() ) {
 			$var = $field->name;
 			$$var = null;
 			$fields[$var] = & $$var;
 		}
 
 		# Bind Results
-		call_user_func_array(array($stmt, 'bind_result'), $fields);
+		call_user_func_array( array( $stmt, 'bind_result' ), $fields );
 
 		# Fetch Results
 		$i = 0;
 		$results = array();
-		while ($stmt->fetch()) {
+		while ( $stmt->fetch() ) {
 			$results[$i] = array();
-			foreach ($fields as $k => $v) {
+			foreach ( $fields as $k => $v ) {
 				$results[$i][$k] = $v;
 			}
 			$i++;
 		}
 		$meta->free();
-        return $results;
+		return $results;
 	}
 
 	/**
 	 * Runs sql scripts to setup database tables
 	 * @param string $path directory without ending slash
 	 */
-	public function runScriptsFromDir($path) {
-		$path = realpath($path);
+	public function runScriptsFromDir( $path ) {
+		$path = realpath( $path );
 
-        $this->logger->info("========================");
-		$this->logger->info("Running scripts in:   ". $path . "/*.sql");
-		$files = glob($path . "/*.sql");
-		$this->logger->info("Number scripts found: " . count($files));
-        $this->logger->info("========================");
+		$this->logger->info( "========================" );
+		$this->logger->info( "Running scripts in:   " . $path . "/*.sql" );
+		$files = glob( $path . "/*.sql" );
+		$this->logger->info( "Number scripts found: " . count( $files ) );
+		$this->logger->info( "========================" );
 
-		foreach ($files as $file) {
-			$data = file_get_contents($file);
+		foreach ( $files as $file ) {
+			$data = file_get_contents( $file );
 
 			// Remove C style and inline comments
-			$comment_patterns = array('/\/\*.*(\n)*.*(\*\/)?/', //C comments
-			                          '/\s*--.*\n/', //inline comments start with --
-			                          '/\s*#.*\n/', //inline comments start with #
+			$comment_patterns = array(
+				'/\/\*.*(\n)*.*(\*\/)?/', //C comments
+				'/\s*--.*\n/', //inline comments start with --
+				'/\s*#.*\n/', //inline comments start with #
 			);
-			$data = preg_replace($comment_patterns, "\n", $data);
+			$data = preg_replace( $comment_patterns, "\n", $data );
 
 			//Retrieve sql statements
-			$stmts = explode(";\n", $data);
-			$stmts = preg_replace("/\\s/", " ", $stmts);
+			$stmts = explode( ";\n", $data );
+			$stmts = preg_replace( "/\\s/", " ", $stmts );
 
-			foreach ($stmts as $query) {
-				if (trim($query) == "") {
+			foreach ( $stmts as $query ) {
+				if ( trim( $query ) == "" ) {
 					continue;
 				}
-				$this->logger->info("Executing query: " . $query);
-                $this->reConnect();
-				$result = $this->db_user->query($query);
+				$this->logger->info( "Executing query: " . $query );
+				$this->reConnect();
+				$result = $this->db_user->query( $query );
 
-                $errno = $this->db_user->errno;
-                $errorMsg = $this->db_user->error;
-                if( $errno == 0 )
-                {
-                   $this->logger->info( "Execution: SUCCESS");
-                }
-                elseif( $errno = 1060 ) // Duplicate column
-                {
-                    $this->logger->info( "Execution: WARNING: " . $errorMsg );
-                }
-                else
-                {
-                    $this->logger->info( "Execution: ERROR: " . $errorMsg );
-                }
-                $this->logger->info( "============" );
+				$errno = $this->db_user->errno;
+				$errorMsg = $this->db_user->error;
+				if ( $errno == 0 ) {
+					$this->logger->info( "Execution: SUCCESS" );
+				} elseif ( $errno = 1060 ) // Duplicate column
+				{
+					$this->logger->info( "Execution: WARNING: " . $errorMsg );
+				} else {
+					$this->logger->info( "Execution: ERROR: " . $errorMsg );
+				}
+				$this->logger->info( "============" );
 			}
 		}
 	}
