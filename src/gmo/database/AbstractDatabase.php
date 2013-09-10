@@ -3,6 +3,7 @@ namespace GMO\Database;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 abstract class AbstractDatabase implements LoggerAwareInterface {
 
@@ -16,7 +17,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	private $password;
 	private $database;
 
-	private $logger;
+	protected $log;
 
 	/**
 	 * Runs sql scripts to setup database tables
@@ -25,11 +26,11 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	public function runScriptsFromDir( $path ) {
 		$path = realpath( $path );
 
-		$this->logger->info( "========================" );
-		$this->logger->info( "Running scripts in:   " . $path . "/*.sql" );
+		$this->log->info( "========================" );
+		$this->log->info( "Running scripts in:   " . $path . "/*.sql" );
 		$files = glob( $path . "/*.sql" );
-		$this->logger->info( "Number scripts found: " . count( $files ) );
-		$this->logger->info( "========================" );
+		$this->log->info( "Number scripts found: " . count( $files ) );
+		$this->log->info( "========================" );
 
 		foreach ( $files as $file ) {
 			$data = file_get_contents( $file );
@@ -50,21 +51,21 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				if ( trim( $query ) == "" ) {
 					continue;
 				}
-				$this->logger->info( "Executing query: " . $query );
+				$this->log->info( "Executing query: " . $query );
 				$this->reConnect();
 				$result = $this->db_user->query( $query );
 
 				$errno = $this->db_user->errno;
 				$errorMsg = $this->db_user->error;
 				if ( $errno == 0 ) {
-					$this->logger->info( "Execution: SUCCESS" );
+					$this->log->info( "Execution: SUCCESS" );
 				} elseif ( $errno = 1060 ) // Duplicate column
 				{
-					$this->logger->info( "Execution: WARNING: " . $errorMsg );
+					$this->log->info( "Execution: WARNING: " . $errorMsg );
 				} else {
-					$this->logger->info( "Execution: ERROR: " . $errorMsg );
+					$this->log->info( "Execution: ERROR: " . $errorMsg );
 				}
-				$this->logger->info( "============" );
+				$this->log->info( "============" );
 			}
 		}
 	}
@@ -75,7 +76,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return null
 	 */
 	public function setLogger( LoggerInterface $logger ) {
-		$this->logger = $logger;
+		$this->log = $logger;
 	}
 
 	/**
@@ -218,7 +219,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$this->password = $password;
 		$this->database = $database;
 
-		$this->logger = new ConsoleLogger();
+		$this->log = new NullLogger();
 
 		$this->openConnection();
 	}
