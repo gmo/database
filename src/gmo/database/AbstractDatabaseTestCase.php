@@ -33,11 +33,10 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 	 */
 	protected function getConnection() {
 		if ( $this->conn === null ) {
-			if ( self::$pdo == null ) {
-				self::$pdo =
-					new \PDO("mysql:host=" . $this->getHost() . ";dbname=" . $this->getDatabase(),
-							$this->getUsername(),
-							$this->getPassword());
+			$newConnStr = "mysql:host=" . $this->getHost() . ";dbname=" . $this->getDatabase();
+			if ( self::$pdo == null || $newConnStr !== self::$connStr ) {
+				self::$pdo = new \PDO( $newConnStr, $this->getUsername(), $this->getPassword() );
+				self::$connStr = $newConnStr;
 			}
 			$this->conn = $this->createDefaultDBConnection( self::$pdo, "mysql" );
 		}
@@ -65,6 +64,7 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 
 	# Only instantiate connection once for test clean-up/fixture load
 	static private $pdo = null;
+	static private $connStr;
 	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
 	private $conn = null;
 }
