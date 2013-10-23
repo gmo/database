@@ -5,6 +5,14 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * Database abstraction designed to provide basic query functions.
+ *
+ * @package GMO\Database
+ *
+ * @since 1.1.0 Added getAffectedRows() method
+ * @since 1.0.0
+ */
 abstract class AbstractDatabase implements LoggerAwareInterface {
 
 	/**
@@ -16,6 +24,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	private $username;
 	private $password;
 	private $database;
+
+	/** @var int number of affected rows from last query */
+	private $affectedRows;
 
 	protected $log;
 
@@ -187,9 +198,20 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		# Get results from statement
 		$results = $this->getResultsFromStmt( $stmt );
 
+		# Update affected rows from query result
+		$this->affectedRows = $stmt->affected_rows;
+
 		$stmt->close();
 
 		return $results;
+	}
+
+	/**
+	 * Gets the number of affected rows from last query
+	 * @return int number of affected rows
+	 */
+	protected function getAffectedRows() {
+		return $this->affectedRows;
 	}
 
 	/**
