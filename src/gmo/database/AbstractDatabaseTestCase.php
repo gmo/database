@@ -3,10 +3,28 @@ namespace GMO\Database;
 
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
-	/**
-	 * @return PdoDbConnection
-	 */
-	abstract function getPdoConnection();
+	/** @return PdoDbConnection */
+	protected function getPdoDbConnection() {}
+
+	protected function preSetup() {
+		if(self::$pdoConn instanceof MySqlPdoDbConnection) {
+			$this->conn->getConnection()->query( "SET FOREIGN_KEY_CHECKS=0" );
+		}
+	}
+	protected function postSetup() {
+		if(self::$pdoConn instanceof MySqlPdoDbConnection) {
+			$this->conn->getConnection()->query( "SET FOREIGN_KEY_CHECKS=1" );
+		}
+	}
+
+	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
+	protected function getUsername() { return ""; }
+	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
+	protected function getPassword() { return ""; }
+	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
+	protected function getHost() { return ""; }
+	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
+	protected function getDatabase() { return ""; }
 
 	/**
 	 * Returns the test database connection.
@@ -16,7 +34,15 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 
 		if ( $this->conn === null ) {
 
-			$pdoConn = $this->getPdoConnection();
+			$pdoConn = $this->getPdoDbConnection();
+			if ($pdoConn == null) {
+				$pdoConn = new MySqlPdoDbConnection(
+					$this->getUsername(),
+					$this->getPassword(),
+					$this->getHost(),
+					$this->getDatabase()
+				);
+			}
 
 			if ( self::$pdo == null || $pdoConn !== self::$pdoConn) {
 				self::$pdo = new \PDO( $pdoConn->getDsn(), $pdoConn->getUser(), $pdoConn->getPassword() );
@@ -30,10 +56,10 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 	}
 
 	protected function setUp() {
-		$conn = $this->getConnection();
-		$conn->getConnection()->query( "SET FOREIGN_KEY_CHECKS=0" );
+		$this->getConnection();
+		$this->preSetup();
 		parent::setUp();
-		$conn->getConnection()->query( "SET FOREIGN_KEY_CHECKS=1" );
+		$this->postSetup();
 	}
 
 	protected function runSelectQuery( $query ) {
@@ -51,5 +77,6 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 	static private $pdo = null;
 	static private $pdoConn;
 	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
+	/** @var \PHPUnit_Extensions_Database_DB_IDatabaseConnection */
 	private $conn = null;
 }
