@@ -4,7 +4,7 @@ namespace GMO\Database;
 class SqliteMemPdoDbConnection extends PdoDbConnection {
 
 	function getDsn() {
-		return "sqlite::memory";
+		return "sqlite::memory:";
 	}
 
 	public function __construct() {
