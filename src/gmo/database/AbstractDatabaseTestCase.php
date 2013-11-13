@@ -4,41 +4,26 @@ namespace GMO\Database;
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
 	/**
-	 * Should return the database host
-	 * @return string
+	 * @return PdoDbConnection
 	 */
-	protected abstract function getHost();
-
-	/**
-	 * Should return the database username
-	 * @return string
-	 */
-	protected abstract function getUsername();
-
-	/**
-	 * Should return the database password
-	 * @return string
-	 */
-	protected abstract function getPassword();
-
-	/**
-	 * Should return the database schema
-	 * @return string
-	 */
-	protected abstract function getDatabase();
+	abstract function getPdoConnection();
 
 	/**
 	 * Returns the test database connection.
 	 * @return \PHPUnit_Extensions_Database_DB_IDatabaseConnection
 	 */
 	protected function getConnection() {
+
 		if ( $this->conn === null ) {
-			$newConnStr = "mysql:host=" . $this->getHost() . ";dbname=" . $this->getDatabase();
-			if ( self::$pdo == null || $newConnStr !== self::$connStr ) {
-				self::$pdo = new \PDO( $newConnStr, $this->getUsername(), $this->getPassword() );
-				self::$connStr = $newConnStr;
+
+			$pdoConn = $this->getPdoConnection();
+
+			if ( self::$pdo == null || $pdoConn !== self::$pdoConn) {
+				self::$pdo = new \PDO( $pdoConn->getDsn(), $pdoConn->getUser(), $pdoConn->getPassword() );
+				self::$pdoConn = $pdoConn;
 			}
-			$this->conn = $this->createDefaultDBConnection( self::$pdo, "mysql" );
+
+			$this->conn = $this->createDefaultDBConnection( self::$pdo, $pdoConn->getSchema() );
 		}
 
 		return $this->conn;
@@ -64,7 +49,7 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 
 	# Only instantiate connection once for test clean-up/fixture load
 	static private $pdo = null;
-	static private $connStr;
+	static private $pdoConn;
 	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
 	private $conn = null;
 }
