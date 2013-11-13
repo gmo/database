@@ -230,16 +230,27 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	}
 
 	/**
-	 * @param $host
-	 * @param $username
-	 * @param $password
-	 * @param $database
+	 * @param DbConnection|mixed $connection Takes a DbConnection or host, user, password, schema
+	 * @throws \InvalidArgumentException
 	 */
-	function __construct( $host, $username, $password, $database ) {
-		$this->host = $host;
-		$this->username = $username;
-		$this->password = $password;
-		$this->database = $database;
+	function __construct($connection) {
+		$args = func_get_args();
+
+		if (count($args) == 1 && $args[0] instanceof DbConnection) {
+			/** @var DbConnection $dbConn */
+			$dbConn = $args[0];
+			$this->host = $dbConn->getHost();
+			$this->username = $dbConn->getUser();
+			$this->password = $dbConn->getPassword();
+			$this->database = $dbConn->getSchema();
+		} elseif (count($args) == 4) {
+			$this->host = $args[0];
+			$this->username = $args[1];
+			$this->password = $args[2];
+			$this->database = $args[3];
+		} else {
+			throw new \InvalidArgumentException();
+		}
 
 		$this->log = new NullLogger();
 
