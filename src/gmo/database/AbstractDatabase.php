@@ -275,15 +275,18 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param array $params
 	 * @return string
 	 */
-	private function getParamTypes( $params ) {
+	private function getParamTypes( &$params ) {
 		$types = ''; //initial sting with types
-		foreach ( $params as $param ) {
-			if ( is_int( $param ) ) {
+		for ($i = 0; $i < count($params); $i++) {
+			if ( is_int( $params[$i] ) ) {
 				$types .= 'i'; //integer
-			} elseif ( is_float( $param ) ) {
+			} elseif ( is_float( $params[$i] ) ) {
 				$types .= 'd'; //double
-			} elseif ( is_string( $param ) ) {
+			} elseif ( is_string( $params[$i] ) ) {
 				$types .= 's'; //string
+			} elseif ( is_bool( $params[$i] ) ) {
+				$params[$i] = $params[$i] ? 1 : 0;
+				$types .= 'i';
 			} else {
 				$types .= 'b'; //blob and unknown
 			}
