@@ -1,6 +1,10 @@
 <?php
 namespace UnitTest\Database;
 
+use GMO\Database\AbstractDatabase;
+use GMO\Database\DbConnection;
+use Psr\Log\LoggerInterface;
+
 require_once __DIR__ . "/../../../tester_autoload.php";
 
 class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
@@ -86,7 +90,7 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	public function test_setupSlaveDbAttributes_with_complete_connection() {
-		$connection = new \GMO\Database\DbConnection('user', 'password', '127.0.0.1', 'schema');
+		$connection = new DbConnection('user', 'password', '127.0.0.1', 'schema');
 		$db = new TestableAbstractDatabase();
 		$db->setupSlaveDbAttributes($connection);
 		$this->assertEquals( 'user', $db->getSlaveUsername() );
@@ -96,7 +100,7 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 	}
 	
 	public function test_setupSlaveDbAttributes_with_null_in_schema() {
-		$connection = new \GMO\Database\DbConnection('user', 'password', '127.0.0.1', null);
+		$connection = new DbConnection('user', 'password', '127.0.0.1', null);
 		$db = new TestableAbstractDatabase();
 		$db->setupSlaveDbAttributes($connection);
 		$this->assertEquals( 'user', $db->getSlaveUsername() );
@@ -106,7 +110,7 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	public function test_setupSlaveDbAttributes_with_null_host_in_connection() {
-		$connection = new \GMO\Database\DbConnection('user', 'password', null, 'schema');
+		$connection = new DbConnection('user', 'password', null, 'schema');
 		$db = new TestableAbstractDatabase();
 		$db->setupSlaveDbAttributes($connection);
 		$this->assertEquals( 'user', $db->getSlaveUsername() );
@@ -127,7 +131,7 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 }
 
 
-class TestableAbstractDatabase extends \GMO\Database\AbstractDatabase {
+class TestableAbstractDatabase extends AbstractDatabase {
 	function __construct() {
 		$this->setDbMaster(new MasterDatabaseMock());
 		$this->setDbSlave(new SlaveDatabaseMock());
@@ -142,7 +146,7 @@ class TestableAbstractDatabase extends \GMO\Database\AbstractDatabase {
 	}
 	
 	public function setupSlaveDbAttributes($slaveConnection) {
-		return parent::setupSlaveDbAttributes($slaveConnection);
+		parent::setupSlaveDbAttributes($slaveConnection);
 	}
 	
 	public function getHost() {
@@ -176,6 +180,8 @@ class TestableAbstractDatabase extends \GMO\Database\AbstractDatabase {
 	public function getSlaveDatabase() {
 		return parent::getSlaveDatabase();
 	}
+
+	public function setLog(LoggerInterface $logger) {}
 }
 
 class DatabaseMock {}
