@@ -105,7 +105,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * of the first row of results from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws \Exception if query fails
+	 * @throws DatabaseException if query fails
 	 * @return mixed
 	 */
 	protected function singleValue( $query, $params = null ) {
@@ -121,7 +121,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * of results from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws \Exception if query fails
+	 * @throws DatabaseException if query fails
 	 * @return array
 	 */
 	protected function singleRow( $query, $params = null ) {
@@ -138,7 +138,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Executes a query wrapped in no lock statement
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws \Exception if query fails
+	 * @throws DatabaseException if query fails
 	 * @return array
 	 */
 	protected function selectWithNoLock( $query, $params = null ) {
@@ -153,7 +153,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * Inserts a row and returns the id
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws \Exception if query fails
+	 * @throws DatabaseException if query fails
 	 * @return array
 	 */
 	protected function insertAndReturnId( $query, $params = null ) {
@@ -170,7 +170,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws \Exception if query fails
+	 * @throws DatabaseException if query fails
 	 * @return array
 	 */
 	protected function execute( $query, $params = null ) {
@@ -188,7 +188,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		# Create statement
 		$stmt = $this->chooseDbByQuery($query)->prepare( $query );
 		if ( !$stmt ) {
-			throw new \Exception("Error preparing statement. Query: \"$query\"");
+			throw new DatabaseException("Error preparing statement. Query: \"$query\"");
 		}
 
 		if ( !empty($params) ) {
@@ -202,7 +202,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 		# Execute query
 		if ( !$stmt->execute() ) {
-			throw new \Exception("MySql Error - Code: " . $stmt->errno . ". " . $stmt->error);
+			throw new DatabaseException($stmt->error, $stmt->errno);
 		}
 
 		# Get results from statement
@@ -227,7 +227,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	/**
 	 * If ping returns false or throws an exception
 	 * it will try to reopen connection
-	 * @throws \Exception if openConnection fails
+	 * @throws DatabaseException if openConnection fails
 	 */
 	protected function reConnect() {
 		try {
@@ -365,6 +365,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	/**
 	 * @param DbConnection|mixed $connection Takes a DbConnection or host, user, password, schema
 	 * @param LoggerInterface|null $logger
+	 * @param DbConnection         $slaveConnection
 	 * @throws \InvalidArgumentException
 	 */
 	function __construct($connection, $logger = null, $slaveConnection = null) {
@@ -403,7 +404,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	
 	/**
 	 * Creates \mysqli connection
-	 * @throws \Exception if invalid connection
+	 * @throws DatabaseException if invalid connection
 	 */
 	private function openConnection() {
 		$this->db_user = new \mysqli($this->host, $this->username, $this->password, $this->database);
@@ -417,7 +418,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	
 	/**
 	 * Creates \mysqli connection for a slave db
-	 * @throws \Exception if invalid connection
+	 * @throws DatabaseException if invalid connection
 	 */
 	private function openSlaveConnection() {
 		if($this->slaveHost == null) {
