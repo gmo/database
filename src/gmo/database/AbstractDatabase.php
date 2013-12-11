@@ -19,11 +19,21 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @var \mysqli
 	 */
 	private $db_user;
+	
+	/**
+	 * @var \mysqli
+	 */
+	private $db_slave;
 
 	private $host;
 	private $username;
 	private $password;
 	private $database;
+	
+	private $slaveHost;
+	private $slaveUsername;
+	private $slavePassword;
+	private $slaveDatabase;
 
 	/** @var int number of affected rows from last query */
 	private $affectedRows;
@@ -64,10 +74,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				}
 				$this->log->info( "Executing query: " . $query );
 				$this->reConnect();
-				$result = $this->db_user->query( $query );
+				$result = $this->chooseDbByQuery($query)->query( $query );
 
-				$errno = $this->db_user->errno;
-				$errorMsg = $this->db_user->error;
+				$errno = $this->chooseDbByQuery($query)->errno;
+				$errorMsg = $this->chooseDbByQuery($query)->error;
 				if ( $errno == 0 ) {
 					$this->log->info( "Execution: SUCCESS" );
 				} elseif ( $errno = 1060 ) // Duplicate column
@@ -132,9 +142,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return array
 	 */
 	protected function selectWithNoLock( $query, $params = null ) {
-		$this->db_user->query( "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED" );
+		$this->chooseDbByQuery($query)->query( "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED" );
 		$results = call_user_func_array( array( $this, "execute" ), func_get_args() );
-		$this->db_user->query( "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ" );
+		$this->chooseDbByQuery($query)->query( "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ" );
 
 		return $results;
 	}
@@ -147,10 +157,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return array
 	 */
 	protected function insertAndReturnId( $query, $params = null ) {
-		$this->db_user->query( "start transaction" );
+		$this->chooseDbByQuery($query)->query( "start transaction" );
 		call_user_func_array( array( $this, "execute" ), func_get_args() );
 		$id = $this->singleValue( "select last_insert_id() as id" );
-		$this->db_user->query( "commit" );
+		$this->chooseDbByQuery($query)->query( "commit" );
 
 		return $id;
 	}
@@ -176,7 +186,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$this->reConnect();
 
 		# Create statement
-		$stmt = $this->db_user->prepare( $query );
+		$stmt = $this->chooseDbByQuery($query)->prepare( $query );
 		if ( !$stmt ) {
 			throw new \Exception("Error preparing statement. Query: \"$query\"");
 		}
@@ -224,9 +234,132 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			if ( !$this->db_user->ping() ) {
 				$this->openConnection();
 			}
+			
+			if ( !$this->db_slave->ping() ) {
+				$this->openConnection();
+			}
 		} catch ( \Exception $ex ) {
 			$this->openConnection();
 		}
+	}
+	
+	/**
+	 * Returns either the master db connection or the slave db connection based on the query being run
+	 * @param string $query
+	 * @return \mysqli
+	 */
+	protected function chooseDbByQuery($query) {		
+		if($this->db_slave == null) {
+			return $this->db_user;
+		}
+		
+		$normalizedQuery = strtolower($query);
+		if(substr($normalizedQuery, 0, 7) == 'select ' && !$this->isSelectIntoQuery($query)) {
+			return $this->db_slave;
+		}
+		
+		return $this->db_user;
+	}
+	
+	/**
+	 * Set the db_user attribute, to allow mocking for testing
+	 * @param \mysqli $dbMaster
+	 */
+	protected function setDbMaster($dbMaster) {
+		$this->db_user = $dbMaster;
+	}
+	
+	/**
+	 * Set the db_slave attribute, to allow mocking for testing
+	 * @param \mysqli $dbSlave
+	 */
+	protected function setDbSlave($dbSlave) {
+		$this->db_slave = $dbSlave;
+	}
+	
+	/**
+	 * Get the host attribute, to allow testing
+	 */
+	protected function getHost() {
+		return $this->host;
+	}
+	
+	/**
+	 * Get the username attribute, to allow testing
+	 */
+	protected function getUsername() {
+		return $this->username;
+	}
+
+	/**
+	 * Get the password attribute, to allow testing
+	 */
+	protected function getPassword() {
+		return $this->password;
+	}
+
+	/**
+	 * Get the database attribute, to allow testing
+	 */
+	protected function getDatabase() {
+		return $this->database;
+	}
+	
+	/**
+	 * Get the slaveHost attribute, to allow testing
+	 */
+	protected function getSlaveHost() {
+		return $this->slaveHost;
+	}
+	
+	/**
+	 * Get the slaveUsername attribute, to allow testing
+	 */
+	protected function getSlaveUsername() {
+		return $this->slaveUsername;
+	}
+	
+	/**
+	 * Get the slavePassword attribute, to allow testing
+	 */
+	protected function getSlavePassword() {
+		return $this->slavePassword;
+	}
+	
+	/**
+	 * Get the slaveDatabase attribute, to allow testing
+	 */
+	protected function getSlaveDatabase() {
+		return $this->slaveDatabase;
+	}
+	
+	/**
+	 * Determines whether or not the query is a SELECT INTO type query
+	 * @param string $query
+	 * @return boolean
+	 */
+	private function isSelectIntoQuery($query) {
+		$normalizedQuery = strtolower($query);
+		return strpos($normalizedQuery, 'into outfile') !== false || strpos($normalizedQuery, 'into dumpfile') !== false;
+	}
+	
+	/**
+	 * Modify the attributes for connecting to a slave db based on a DbConnection
+	 * @param DbConnection|null $slaveConnection
+	 */
+	protected function setupSlaveDbAttributes($slaveConnection) {
+		if( !($slaveConnection instanceof DbConnection) ) {
+			$this->slaveHost = null;
+			$this->slaveUsername = null;
+			$this->slavePassword = null;
+			$this->slaveDatabase = null;
+			return;
+		}
+	
+		$this->slaveHost = $slaveConnection->getHost();
+		$this->slaveUsername = $slaveConnection->getUser();
+		$this->slavePassword = $slaveConnection->getPassword();
+		$this->slaveDatabase = $slaveConnection->getSchema();
 	}
 
 	/**
@@ -234,7 +367,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param LoggerInterface|null $logger
 	 * @throws \InvalidArgumentException
 	 */
-	function __construct($connection, $logger = null) {
+	function __construct($connection, $logger = null, $slaveConnection = null) {
 		$args = func_get_args();
 
 		if ($args[0] instanceof DbConnection) {
@@ -258,6 +391,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		} else {
 			throw new \InvalidArgumentException();
 		}
+		
+		$this->setupSlaveDbAttributes($slaveConnection);
 
 		if ($this->log == null) {
 			$this->log = new NullLogger();
@@ -265,7 +400,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 		$this->openConnection();
 	}
-
+	
 	/**
 	 * Creates \mysqli connection
 	 * @throws \Exception if invalid connection
@@ -276,8 +411,27 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		if ( $this->db_user == null || !$this->db_user->ping() ) {
 			throw new \Exception("Unable to establish connection to database");
 		}
+		
+		$this->openSlaveConnection();
 	}
-
+	
+	/**
+	 * Creates \mysqli connection for a slave db
+	 * @throws \Exception if invalid connection
+	 */
+	private function openSlaveConnection() {
+		if($this->slaveHost == null) {
+			$this->db_slave = null;
+			return;
+		}
+		
+		$this->db_slave = new \mysqli($this->slaveHost, $this->slaveUsername, $this->slavePassword, $this->slaveDatabase);
+		
+		if ( $this->db_slave == null || !$this->db_slave->ping() ) {
+			throw new \Exception("Unable to establish connection to slave database");
+		}
+	}
+	
 	/**
 	 * Makes a string based on param types
 	 * for the bind_param function
