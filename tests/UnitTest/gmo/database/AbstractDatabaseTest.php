@@ -141,10 +141,6 @@ class TestableAbstractDatabase extends \GMO\Database\AbstractDatabase {
 		return parent::chooseDbByQuery($query);
 	}
 	
-	public function isSelectIntoQuery($query) {
-		return parent::isSelectIntoQuery($query);
-	}
-	
 	public function setupSlaveDbAttributes($slaveConnection) {
 		return parent::setupSlaveDbAttributes($slaveConnection);
 	}
