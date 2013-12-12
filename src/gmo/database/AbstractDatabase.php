@@ -37,7 +37,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 	/** @var int number of affected rows from last query */
 	private $affectedRows;
-
+	
 	protected $log;
 
 	/**
@@ -163,6 +163,14 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$this->chooseDbByQuery($query)->query( "commit" );
 
 		return $id;
+	}
+	
+	/**
+	 * Returns the last insert id on the master db connection
+	 * @return int
+	 */
+	protected function getInsertId() {
+		return $this->db_user->insert_id;
 	}
 
 	/**
