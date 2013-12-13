@@ -195,9 +195,18 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$this->reConnect();
 
 		# Create statement
-		$stmt = $this->chooseDbByQuery($query)->prepare( $query );
+		$db = $this->chooseDbByQuery($query);
+		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
-			throw new DatabaseException("Error preparing statement. Query: \"$query\"");
+			$this->log->error("Error preparing statement.",
+				array(
+					"query" => $query,
+					"params" => $params,
+					"error" => $db->error,
+					"errorNum" => $db->errno
+				)
+			);
+			throw new DatabaseException($db->error, $db->errno);
 		}
 
 		if ( !empty($params) ) {
