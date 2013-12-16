@@ -240,6 +240,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		} catch ( \Exception $ex ) {
 			$this->dbMaster = $this->openConnection($this->dbMasterConnection);
 		}
+
+		if ($this->dbSlave === null) {
+			return;
+		}
 		try {
 			if ( !$this->dbSlave->ping() ) {
 				$this->dbSlave = $this->openConnection($this->dbSlaveConnection);
@@ -321,6 +325,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 
 		return $mysqli;
+	}
+
+	function __destruct() {
+		if ($this->dbMaster) {
+			$this->dbMaster->close();
+		}
+		if ($this->dbSlave) {
+			$this->dbSlave->close();
+		}
 	}
 	#endregion
 
@@ -451,7 +464,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				$types .= 'b'; //blob and unknown
 			}
 		}
-		array_unshift($params, $type); # prepend type string
+		array_unshift($params, $types); # prepend type string
 		return $params;
 	}
 
