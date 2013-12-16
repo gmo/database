@@ -326,6 +326,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 		return $mysqli;
 	}
+
+	function __destruct() {
+		if ($this->dbMaster) {
+			$this->dbMaster->close();
+		}
+		if ($this->dbSlave) {
+			$this->dbSlave->close();
+		}
+	}
 	#endregion
 
 	#region Query Helper methods
