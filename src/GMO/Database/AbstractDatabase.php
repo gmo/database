@@ -187,8 +187,6 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$params = func_get_args();
 		$query = array_shift( $params );
 
-		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
-
 		# Update query and params with params that have arrays
 		list($query, $params) = $this->expandQueryParams( $query, $params );
 
@@ -368,12 +366,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	/**
 	 * Expands all params that are arrays into the main params
 	 * array and updates query string with the correct number
-	 * of question marks for the bind_param function
+	 * of question marks and removes tabs and new lines.
 	 * @param string $query
 	 * @param array  $params
 	 * @return array (query, params)
 	 */
 	private function expandQueryParams( $query, $params ) {
+		# remove tabs and new lines
+		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
+
 		$newParams = array();
 		# Check each param for arrays
 		foreach ( $params as $param ) {
