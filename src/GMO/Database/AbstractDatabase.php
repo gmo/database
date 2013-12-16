@@ -196,22 +196,14 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$db = $this->chooseDbByQuery($query);
 		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
-			$this->log->error("Error preparing statement.",
-				array(
-					"query" => $query,
-					"params" => $params,
-					"error" => $db->error,
-					"errorNum" => $db->errno
-				)
-			);
-			throw new DatabaseException($db->error, $db->errno);
+			$this->throwDbException("Error preparing statement", $query, $params, $db);
 		}
 
 		$stmt = $this->bindParamsToStmt($stmt, $params);
 
 		# Execute query
 		if ( !$stmt->execute() ) {
-			throw new DatabaseException($stmt->error, $stmt->errno);
+			$this->throwDbException("Error executing statement", $query, $params, $stmt);
 		}
 
 		# Get results from statement
@@ -514,6 +506,24 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 		$meta->free();
 		return $results;
+	}
+
+	/**
+	 * Throw DatabaseException and log error
+	 * @param string               $msg
+	 * @param string               $query
+	 * @param array                $params
+	 * @param \mysqli|\mysqli_stmt $db
+	 * @throws DatabaseException
+	 */
+	private function throwDbException($msg, $query, $params, $db) {
+		$this->log->error($msg, array(
+			"query" => $query,
+			"params" => $params,
+			"error" => $db->error,
+			"errorNum" => $db->errno
+		));
+		throw new DatabaseException($db->error, $db->errno);
 	}
 
 	#endregion
