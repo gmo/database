@@ -309,7 +309,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @throws DatabaseException
 	 * @return \mysqli|null
 	 */
-	private function openConnection(DbConnection $connection) {
+	private function openConnection(DbConnection $connection = null) {
 		if($connection == null) {
 			return null;
 		}
