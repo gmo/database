@@ -335,6 +335,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	#endregion
 
 	#region Query Helper methods
+
+	#region Master Slave determination
 	/**
 	 * Returns either the master or slave db connection based on the query being run
 	 * @param string $query
@@ -360,7 +362,57 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	private function isSelectIntoQuery($query) {
 		return String::iContains($query, 'into outfile') || String::iContains($query, 'into dumpfile');
 	}
+	#endregion
 
+	#region Preparing query
+	/**
+	 * Expands all params that are arrays into the main params
+	 * array and updates query string with the correct number
+	 * of question marks for the bind_param function
+	 * @param string $query
+	 * @param array  $params
+	 * @return array (query, params)
+	 */
+	private function expandQueryParams( $query, $params ) {
+		$newParams = array();
+		# Check each param for arrays
+		foreach ( $params as $param ) {
+			if ( is_array( $param ) ) {
+				# Get string of question marks for query
+				$marks = $this->getQuestionMarks( $param );
+
+				# Replace the first occurrence of "??" with correct number of "?"
+				$query = preg_replace( "/\\?\\?/", $marks, $query, 1 );
+
+				# Add each item in array to new params
+				foreach ( $param as $item ) {
+					$newParams[] = $item;
+				}
+			} else {
+				# If not array, just add to new params
+				$newParams[] = $param;
+			}
+		}
+		return array( $query, $newParams );
+	}
+
+	/**
+	 * Returns a string of question marks based on
+	 * number of variables in the array passed in
+	 */
+	private function getQuestionMarks( $params ) {
+		$string = "";
+		for ( $i = 0; $i < count( $params ); $i++ ) {
+			$string .= "?, ";
+		}
+		# remove the last ", "
+		$string = substr( $string, 0, -2 );
+
+		return $string;
+	}
+	#endregion
+
+	#region Parameter binding
 	/**
 	 * Bind parameters to a statement
 	 * @param $stmt
@@ -422,52 +474,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 		return $refs;
 	}
-
-	/**
-	 * Expands all params that are arrays into the main params
-	 * array and updates query string with the correct number
-	 * of question marks for the bind_param function
-	 * @param string $query
-	 * @param array  $params
-	 * @return array (query, params)
-	 */
-	private function expandQueryParams( $query, $params ) {
-		$newParams = array();
-		# Check each param for arrays
-		foreach ( $params as $param ) {
-			if ( is_array( $param ) ) {
-				# Get string of question marks for query
-				$marks = $this->getQuestionMarks( $param );
-
-				# Replace the first occurrence of "??" with correct number of "?"
-				$query = preg_replace( "/\\?\\?/", $marks, $query, 1 );
-
-				# Add each item in array to new params
-				foreach ( $param as $item ) {
-					$newParams[] = $item;
-				}
-			} else {
-				# If not array, just add to new params
-				$newParams[] = $param;
-			}
-		}
-		return array( $query, $newParams );
-	}
-
-	/**
-	 * Returns a string of question marks based on
-	 * number of variables in the array passed in
-	 */
-	private function getQuestionMarks( $params ) {
-		$string = "";
-		for ( $i = 0; $i < count( $params ); $i++ ) {
-			$string .= "?, ";
-		}
-		# remove the last ", "
-		$string = substr( $string, 0, -2 );
-
-		return $string;
-	}
+	#endregion
 
 	/**
 	 * Returns results from a statement
@@ -507,5 +514,6 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$meta->free();
 		return $results;
 	}
+
 	#endregion
 }
