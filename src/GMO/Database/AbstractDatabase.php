@@ -187,31 +187,23 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$params = func_get_args();
 		$query = array_shift( $params );
 
-		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
-
 		# Update query and params with params that have arrays
 		list($query, $params) = $this->expandQueryParams( $query, $params );
 
 		$this->reConnect();
 
 		# Create statement
-		$stmt = $this->chooseDbByQuery($query)->prepare( $query );
+		$db = $this->chooseDbByQuery($query);
+		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
-			throw new DatabaseException("Error preparing statement. Query: \"$query\"");
+			$this->throwDbException("Error preparing statement", $query, $params, $db);
 		}
 
-		if ( !empty($params) ) {
-			# Get types for bind_param
-			$type = $this->getParamTypes( $params );
-			array_unshift( $params, $type );
-
-			# Bind variables to the statement
-			call_user_func_array( array( $stmt, "bind_param" ), $this->refValues( $params ) );
-		}
+		$stmt = $this->bindParamsToStmt($stmt, $params);
 
 		# Execute query
 		if ( !$stmt->execute() ) {
-			throw new DatabaseException($stmt->error, $stmt->errno);
+			$this->throwDbException("Error executing statement", $query, $params, $stmt);
 		}
 
 		# Get results from statement
@@ -333,6 +325,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	#endregion
 
 	#region Query Helper methods
+
+	#region Master Slave determination
 	/**
 	 * Returns either the master or slave db connection based on the query being run
 	 * @param string $query
@@ -358,54 +352,21 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	private function isSelectIntoQuery($query) {
 		return String::iContains($query, 'into outfile') || String::iContains($query, 'into dumpfile');
 	}
+	#endregion
 
-	/**
-	 * Makes a string based on param types
-	 * for the bind_param function
-	 * @param array $params
-	 * @return string
-	 */
-	private function getParamTypes( &$params ) {
-		$types = ''; //initial sting with types
-		for ($i = 0; $i < count($params); $i++) {
-			if ( is_int( $params[$i] ) ) {
-				$types .= 'i'; //integer
-			} elseif ( is_float( $params[$i] ) ) {
-				$types .= 'd'; //double
-			} elseif ( is_string( $params[$i] ) ) {
-				$types .= 's'; //string
-			} elseif ( is_bool( $params[$i] ) ) {
-				$params[$i] = $params[$i] ? 1 : 0;
-				$types .= 'i';
-			} else {
-				$types .= 'b'; //blob and unknown
-			}
-		}
-		return $types;
-	}
-
-	/**
-	 * Corrects param array for bind_param function
-	 * @param array $arr
-	 * @return array
-	 */
-	private function refValues( $arr ) {
-		$refs = array();
-		foreach ( $arr as $key => $value ) {
-			$refs[$key] = & $arr[$key];
-		}
-		return $refs;
-	}
-
+	#region Preparing query
 	/**
 	 * Expands all params that are arrays into the main params
 	 * array and updates query string with the correct number
-	 * of question marks for the bind_param function
+	 * of question marks and removes tabs and new lines.
 	 * @param string $query
 	 * @param array  $params
 	 * @return array (query, params)
 	 */
 	private function expandQueryParams( $query, $params ) {
+		# remove tabs and new lines
+		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
+
 		$newParams = array();
 		# Check each param for arrays
 		foreach ( $params as $param ) {
@@ -442,6 +403,71 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 		return $string;
 	}
+	#endregion
+
+	#region Parameter binding
+	/**
+	 * Bind parameters to a statement
+	 * @param $stmt
+	 * @param $params
+	 * @return \mysqli_stmt
+	 */
+	private function bindParamsToStmt($stmt, $params) {
+		if (empty($params)) {
+			return $stmt;
+		}
+
+		$bindParams = $this->getParamsWithTypeString($params);
+
+		call_user_func_array(array( $stmt, "bind_param" ), $this->refValues($bindParams));
+
+		return $stmt;
+	}
+
+	/**
+	 * Prepends a string based on param types for the bind_param function.
+	 * Also converts booleans and DateTimes to database formats.
+	 * @param array $params
+	 * @return array
+	 */
+	private function getParamsWithTypeString( $params ) {
+		$types = ''; //initial string with types
+		for ($i = 0; $i < count($params); $i++) {
+			if ( is_int( $params[$i] ) ) {
+				$types .= 'i';
+			} elseif ( is_float( $params[$i] ) ) {
+				$types .= 'd';
+			} elseif ( is_string( $params[$i] ) ) {
+				$types .= 's';
+			} elseif ( is_bool( $params[$i] ) ) {
+				$params[$i] = $params[$i] ? 1 : 0;
+				$types .= 'i';
+			} elseif ( $params[$i] instanceof \DateTime ) {
+				/** @var \DateTime $dt */
+				$dt = $params[$i];
+				$params[$i] = $dt->format('Y-m-d h:i:s');
+				$types .= 's';
+			} else {
+				$types .= 'b'; //blob and unknown
+			}
+		}
+		array_unshift($params, $type); # prepend type string
+		return $params;
+	}
+
+	/**
+	 * Corrects param array for bind_param function
+	 * @param array $arr
+	 * @return array
+	 */
+	private function refValues( $arr ) {
+		$refs = array();
+		foreach ( $arr as $key => $value ) {
+			$refs[$key] = & $arr[$key];
+		}
+		return $refs;
+	}
+	#endregion
 
 	/**
 	 * Returns results from a statement
@@ -481,5 +507,24 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$meta->free();
 		return $results;
 	}
+
+	/**
+	 * Throw DatabaseException and log error
+	 * @param string               $msg
+	 * @param string               $query
+	 * @param array                $params
+	 * @param \mysqli|\mysqli_stmt $db
+	 * @throws DatabaseException
+	 */
+	private function throwDbException($msg, $query, $params, $db) {
+		$this->log->error($msg, array(
+			"query" => $query,
+			"params" => $params,
+			"error" => $db->error,
+			"errorNum" => $db->errno
+		));
+		throw new DatabaseException($db->error, $db->errno);
+	}
+
 	#endregion
 }
