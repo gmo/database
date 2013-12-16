@@ -209,14 +209,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			throw new DatabaseException($db->error, $db->errno);
 		}
 
-		if ( !empty($params) ) {
-			# Get types for bind_param
-			$type = $this->getParamTypes( $params );
-			array_unshift( $params, $type );
-
-			# Bind variables to the statement
-			call_user_func_array( array( $stmt, "bind_param" ), $this->refValues( $params ) );
-		}
+		$stmt = $this->bindParamsToStmt($stmt, $params);
 
 		# Execute query
 		if ( !$stmt->execute() ) {
@@ -369,28 +362,52 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Makes a string based on param types
-	 * for the bind_param function
-	 * @param array $params
-	 * @return string
+	 * Bind parameters to a statement
+	 * @param $stmt
+	 * @param $params
+	 * @return \mysqli_stmt
 	 */
-	private function getParamTypes( &$params ) {
-		$types = ''; //initial sting with types
+	private function bindParamsToStmt($stmt, $params) {
+		if (empty($params)) {
+			return $stmt;
+		}
+
+		$bindParams = $this->getParamsWithTypeString($params);
+
+		call_user_func_array(array( $stmt, "bind_param" ), $this->refValues($bindParams));
+
+		return $stmt;
+	}
+
+	/**
+	 * Prepends a string based on param types for the bind_param function.
+	 * Also converts booleans and DateTimes to database formats.
+	 * @param array $params
+	 * @return array
+	 */
+	private function getParamsWithTypeString( $params ) {
+		$types = ''; //initial string with types
 		for ($i = 0; $i < count($params); $i++) {
 			if ( is_int( $params[$i] ) ) {
-				$types .= 'i'; //integer
+				$types .= 'i';
 			} elseif ( is_float( $params[$i] ) ) {
-				$types .= 'd'; //double
+				$types .= 'd';
 			} elseif ( is_string( $params[$i] ) ) {
-				$types .= 's'; //string
+				$types .= 's';
 			} elseif ( is_bool( $params[$i] ) ) {
 				$params[$i] = $params[$i] ? 1 : 0;
 				$types .= 'i';
+			} elseif ( $params[$i] instanceof \DateTime ) {
+				/** @var \DateTime $dt */
+				$dt = $params[$i];
+				$params[$i] = $dt->format('Y-m-d h:i:s');
+				$types .= 's';
 			} else {
 				$types .= 'b'; //blob and unknown
 			}
 		}
-		return $types;
+		array_unshift($params, $type); # prepend type string
+		return $params;
 	}
 
 	/**
