@@ -62,6 +62,14 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 		$this->postSetup();
 	}
 
+	protected function tearDown() {
+		parent::tearDown();
+
+		$this->conn->close();
+		$this->conn = null;
+		self::$pdo = null;
+	}
+
 	protected function runSelectQuery( $query ) {
 		$conn = $this->getConnection();
 
