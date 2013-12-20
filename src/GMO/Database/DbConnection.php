@@ -24,6 +24,18 @@ class DbConnection {
 		$this->schema = $schema;
 	}
 
+	/**
+	 * Recasts the object as a child object
+	 * @param DbConnection $conn
+	 * @return DbConnection
+	 */
+	public static function fromSelf(DbConnection $conn) {
+		return new DbConnection($conn->getUser(),
+		                        $conn->getPassword(),
+		                        $conn->getHost(),
+		                        $conn->getSchema());
+	}
+
 	private $user;
 	private $password;
 	private $host;

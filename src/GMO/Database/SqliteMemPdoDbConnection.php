@@ -10,4 +10,8 @@ class SqliteMemPdoDbConnection extends PdoDbConnection {
 	public function __construct() {
 		parent::__construct(null, null, null, ":memory:");
 	}
+
+	public static function fromSelf(DbConnection $conn) {
+		return static::__construct();
+	}
 }
