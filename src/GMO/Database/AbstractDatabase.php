@@ -458,7 +458,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			} elseif ( $params[$i] instanceof \DateTime ) {
 				/** @var \DateTime $dt */
 				$dt = $params[$i];
-				$params[$i] = $dt->format('Y-m-d h:i:s');
+				$params[$i] = $dt->format('Y-m-d H:i:s');
 				$types .= 's';
 			} else {
 				$types .= 'b'; //blob and unknown
