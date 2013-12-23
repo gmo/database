@@ -30,10 +30,11 @@ class DbConnection {
 	 * @return DbConnection
 	 */
 	public static function fromSelf(DbConnection $conn) {
-		return new DbConnection($conn->getUser(),
-		                        $conn->getPassword(),
-		                        $conn->getHost(),
-		                        $conn->getSchema());
+		$cls = get_called_class();
+		return new $cls($conn->getUser(),
+						$conn->getPassword(),
+						$conn->getHost(),
+						$conn->getSchema());
 	}
 
 	private $user;
