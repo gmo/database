@@ -64,14 +64,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			$data = preg_replace( $comment_patterns, "\n", $data );
 
 			//Retrieve sql statements
-			$stmts = explode( ";\n", $data );
-			$stmts = preg_replace( "/\\s/", " ", $stmts );
+			$stmts = explode( ";", $data );
+			$stmts = preg_replace( '#[^\S\n]#', " ", $stmts );
+			$stmts = preg_replace( "[\n]", "\n\t", $stmts );
 
 			foreach ( $stmts as $query ) {
 				if ( trim( $query ) == "" ) {
 					continue;
 				}
-				$this->log->info( "Executing query: " . $query );
+				$this->log->info( "Executing query:\n\t" . $query );
 				$this->reConnect();
 				$result = $this->chooseDbByQuery($query)->query( $query );
 
