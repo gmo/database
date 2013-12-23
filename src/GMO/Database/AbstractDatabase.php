@@ -350,7 +350,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			return $this->dbMaster;
 		}
 
-		if (String::iStartsWith($query, 'select ') && !$this->isSelectIntoQuery($query)) {
+		if (String::startsWithInsensitive($query, 'select ') && !$this->isSelectIntoQuery($query)) {
 			return $this->dbSlave;
 		}
 
@@ -363,7 +363,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return boolean
 	 */
 	private function isSelectIntoQuery($query) {
-		return String::iContains($query, 'into outfile') || String::iContains($query, 'into dumpfile');
+		return String::containsInsensitive($query, 'into outfile') ||
+		       String::containsInsensitive($query, 'into dumpfile');
 	}
 	#endregion
 

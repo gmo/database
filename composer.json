@@ -3,7 +3,7 @@
 	"description": "Common database abstraction providing simple query methods",
 	"require": {
 		"psr/log": "1.0.0",
-		"gmo/common": "~1.3"
+		"gmo/common": "~1.6"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "3.7.*",
