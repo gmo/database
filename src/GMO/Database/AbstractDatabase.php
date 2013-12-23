@@ -81,9 +81,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 					$this->log->info( "Execution: SUCCESS" );
 				} elseif ( $errno = 1060 ) // Duplicate column
 				{
-					$this->log->info( "Execution: WARNING: " . $errorMsg );
+					$this->log->warning( "Execution: " . $errorMsg );
 				} else {
-					$this->log->info( "Execution: ERROR: " . $errorMsg );
+					$this->log->error( "Execution: " . $errorMsg );
 				}
 				$this->log->info( "============" );
 			}
