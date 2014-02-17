@@ -161,7 +161,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	protected function insertAndReturnId( $query, $params = null ) {
 		$this->chooseDbByQuery($query)->query( "start transaction" );
 		call_user_func_array( array( $this, "execute" ), func_get_args() );
-		$id = $this->singleValue( "select last_insert_id() as id" );
+		$id = $this->singleValue( "m_select last_insert_id() as id" );
 		$this->chooseDbByQuery($query)->query( "commit" );
 
 		return $id;
@@ -188,13 +188,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$params = func_get_args();
 		$query = array_shift( $params );
 
-		# Update query and params with params that have arrays
-		list($query, $params) = $this->expandQueryParams( $query, $params );
+		# Update query and params with params that have arrays.
+		# Extract m_select for force master connection
+		list($query, $params, $forceMaster) = $this->expandQueryParams( $query, $params );
 
 		$this->reConnect();
 
+		$db = $forceMaster ? $this->dbMaster : $this->chooseDbByQuery($query);
+
 		# Create statement
-		$db = $this->chooseDbByQuery($query);
 		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
 			$this->throwDbException("Error preparing statement", $query, $params, $db);
@@ -350,6 +352,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		if ($this->dbSlave == null) {
 			return $this->dbMaster;
 		}
+		if (String::containsInsensitive($query, "m_select")) {
+			return $this->dbMaster;
+		}
 
 		if (String::startsWithInsensitive($query, 'select ') && !$this->isSelectIntoQuery($query)) {
 			return $this->dbSlave;
@@ -379,6 +384,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return array (query, params)
 	 */
 	private function expandQueryParams( $query, $params ) {
+		$forceMaster = String::containsInsensitive($query, "m_select");
+		$query = preg_replace("/m_select/i", "SELECT", $query, 1);
+
 		# remove tabs and new lines
 		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
 
@@ -401,7 +409,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				$newParams[] = $param;
 			}
 		}
-		return array( $query, $newParams );
+		return array( $query, $newParams, $forceMaster );
 	}
 
 	/**

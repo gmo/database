@@ -6,12 +6,51 @@ use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . "/../../../tester_autoload.php";
 
+class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
+
+	public function testExpandQueryParamsWithArray() {
+		$query = "SELECT * from FOO WHERE something IN (??) AND color = ?";
+		$params = array(
+			array(1, 2, 3),
+		    "blue"
+		);
+
+		list($query, $params, $forceMaster) = $this->invokeMethod("expandQueryParams", array($query, $params));
+
+		$this->assertSame("SELECT * from FOO WHERE something IN (?, ?, ?) AND color = ?", $query);
+		$this->assertSame(array(1, 2, 3, "blue"), $params);
+	}
+
+	public function testExpandQueryParamsForceMaster() {
+		$query = "M_SELECT * from FOO";
+		$params = array();
+
+		list($query, $params, $forceMaster) = $this->invokeMethod("expandQueryParams", array($query, $params));
+
+		$this->assertSame("SELECT * from FOO", $query);
+		$this->assertSame(array(), $params);
+		$this->assertTrue($forceMaster);
+	}
+
+	protected function invokeMethod($method, $params) {
+		$db = new \ReflectionClass("\\UnitTest\\Database\\TestableAbstractDatabase");
+		$method = $db->getMethod($method);
+		$method->setAccessible(true);
+		return $method->invokeArgs($db->newInstance(), $params);
+	}
+}
+
+//region Master Slave Test
 class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
 	const SLAVE_CLASS_MOCK = '\UnitTest\Database\SlaveDatabaseMock';
 	const MASTER_CLASS_MOCK = '\UnitTest\Database\MasterDatabaseMock';
 
 	public function test_chooseDbByQuery_with_select_and_with_a_slave_db() {
 		$this->assert_slave($this->dbWithSlave, 'SELECT * FROM foo');
+	}
+
+	public function test_chooseDbByQuery_with_select_and_with_a_slave_db_and_forcing_master() {
+		$this->assert_master($this->dbWithSlave, 'M_SELECT * FROM foo');
 	}
 	
 	public function test_chooseDbByQuery_with_select_into_outfile_and_with_a_slave_db() {
@@ -83,7 +122,7 @@ class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
 	/** @var TestableAbstractDatabase */
 	private $dbWithSlave;
 }
-
+//endregion
 
 class TestableAbstractDatabase extends AbstractDatabase {
 	function __construct($slave = null) {
