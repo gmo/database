@@ -6,81 +6,82 @@ use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . "/../../../tester_autoload.php";
 
-class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
+class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
 	const SLAVE_CLASS_MOCK = '\UnitTest\Database\SlaveDatabaseMock';
 	const MASTER_CLASS_MOCK = '\UnitTest\Database\MasterDatabaseMock';
 
 	public function test_chooseDbByQuery_with_select_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::SLAVE_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo'));
+		$this->assert_slave($this->dbWithSlave, 'SELECT * FROM foo');
 	}
 	
 	public function test_chooseDbByQuery_with_select_into_outfile_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo INTO OUTFILE "/tmp/bar.txt"'));
+		$this->assert_master($this->dbWithSlave, 'SELECT * FROM foo INTO OUTFILE "/tmp/bar.txt"');
 	}
 	
 	public function test_chooseDbByQuery_with_select_into_dumpfile_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo INTO DUMPFILE "/tmp/bar.txt"'));
+		$this->assert_master($this->dbWithSlave, 'SELECT * FROM foo INTO DUMPFILE "/tmp/bar.txt"');
 	}
 	
 	public function test_chooseDbByQuery_with_insert_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('INSERT INTO foo (a) VALUES (1)'));
+		$this->assert_master($this->dbWithSlave, 'INSERT INTO foo (a) VALUES (1)');
 	}
 	
 	public function test_chooseDbByQuery_with_insert_into_select_from_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('INSERT INTO foo (a) SELECT (b) FROM bar WHERE id=1'));
+		$this->assert_master($this->dbWithSlave, 'INSERT INTO foo (a) SELECT (b) FROM bar WHERE id=1');
 	}
 	
 	public function test_chooseDbByQuery_with_update_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('UPDATE foo SET a = 1 WHERE id=1'));
+		$this->assert_master($this->dbWithSlave, 'UPDATE foo SET a = 1 WHERE id=1');
 	}
 	
 	public function test_chooseDbByQuery_with_delete_and_with_a_slave_db() {
-		$db = new TestableAbstractDatabase(new SlaveDatabaseMock());
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('DELETE FROM foo WHERE id=1'));
+		$this->assert_master($this->dbWithSlave, 'DELETE FROM foo WHERE id=1');
 	}
 	
 	public function test_chooseDbByQuery_with_select_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo'));
+		$this->assert_master($this->db, 'SELECT * FROM foo');
 	}
 	
 	public function test_chooseDbByQuery_with_select_into_outfile_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo INTO OUTFILE "/tmp/bar.txt"'));
+		$this->assert_master($this->db, 'SELECT * FROM foo INTO OUTFILE "/tmp/bar.txt"');
 	}
 	
 	public function test_chooseDbByQuery_with_select_into_dumpfile_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('SELECT * FROM foo INTO DUMPFILE "/tmp/bar.txt"'));
+		$this->assert_master($this->db, 'SELECT * FROM foo INTO DUMPFILE "/tmp/bar.txt"');
 	}
 	
 	public function test_chooseDbByQuery_with_insert_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('INSERT INTO foo (a) VALUES (1)'));
+		$this->assert_master($this->db, 'INSERT INTO foo (a) VALUES (1)');
 	}
 	
 	public function test_chooseDbByQuery_with_insert_into_select_from_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('INSERT INTO foo (a) SELECT (b) FROM bar WHERE id=1'));
-		
+		$this->assert_master($this->db, 'INSERT INTO foo (a) SELECT (b) FROM bar WHERE id=1');
 	}
 	
 	public function test_chooseDbByQuery_with_update_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('UPDATE foo SET a = 1 WHERE id=1'));
+		$this->assert_master($this->db, 'UPDATE foo SET a = 1 WHERE id=1');
 	}
 	
 	public function test_chooseDbByQuery_with_delete_and_no_slave_db() {
-		$db = new TestableAbstractDatabase();
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery('DELETE FROM foo WHERE id=1'));
+		$this->assert_master($this->db, 'DELETE FROM foo WHERE id=1');
 	}
 
+	protected function assert_master($db, $query) {
+		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->choseDbByQuery($query));
+	}
+	protected function assert_slave($db, $query) {
+		$this->assertInstanceOf(self::SLAVE_CLASS_MOCK, $db->choseDbByQuery($query));
+	}
+
+	protected function setUp() {
+		$this->db = new TestableAbstractDatabase();
+		$this->dbWithSlave = new TestableAbstractDatabase(new SlaveDatabaseMock());
+	}
+
+	/** @var TestableAbstractDatabase */
+	private $db;
+	/** @var TestableAbstractDatabase */
+	private $dbWithSlave;
 }
 
 
@@ -97,6 +98,8 @@ class TestableAbstractDatabase extends AbstractDatabase {
 	public function setLog(LoggerInterface $logger) {}
 }
 
-class DatabaseMock {}
+class DatabaseMock {
+	function close() {}
+}
 class MasterDatabaseMock extends DatabaseMock {}
 class SlaveDatabaseMock extends DatabaseMock {}
