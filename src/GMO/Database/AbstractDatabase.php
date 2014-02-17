@@ -161,7 +161,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	protected function insertAndReturnId( $query, $params = null ) {
 		$this->chooseDbByQuery($query)->query( "start transaction" );
 		call_user_func_array( array( $this, "execute" ), func_get_args() );
-		$id = $this->singleValue( "m_select last_insert_id() as id" );
+		$id = $this->getInsertId();
 		$this->chooseDbByQuery($query)->query( "commit" );
 
 		return $id;
