@@ -15,21 +15,10 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 		    "blue"
 		);
 
-		list($query, $params, $forceMaster) = $this->invokeMethod("expandQueryParams", array($query, $params));
+		list($query, $params) = $this->invokeMethod("expandQueryParams", array($query, $params));
 
 		$this->assertSame("SELECT * from FOO WHERE something IN (?, ?, ?) AND color = ?", $query);
 		$this->assertSame(array(1, 2, 3, "blue"), $params);
-	}
-
-	public function testExpandQueryParamsForceMaster() {
-		$query = "M_SELECT * from FOO";
-		$params = array();
-
-		list($query, $params, $forceMaster) = $this->invokeMethod("expandQueryParams", array($query, $params));
-
-		$this->assertSame("SELECT * from FOO", $query);
-		$this->assertSame(array(), $params);
-		$this->assertTrue($forceMaster);
 	}
 
 	protected function invokeMethod($method, $params) {

@@ -33,7 +33,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 	/** @var int number of affected rows from last query */
 	private $affectedRows;
-	
+
+	/** @var bool Force master connection flag */
+	private $forceMaster;
+
 	/** @var LoggerInterface */
 	protected $log;
 	#endregion
@@ -102,6 +105,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	#endregion
 
 	#region Query methods
+	/**
+	 * Force next query to use master database connection
+	 * @return $this
+	 */
+	protected function useMaster() {
+		$this->forceMaster = true;
+		return $this;
+	}
+
 	/**
 	 * Returns a single value from the first column
 	 * of the first row of results from query.
@@ -189,14 +201,13 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$query = array_shift( $params );
 
 		# Update query and params with params that have arrays.
-		# Extract m_select for force master connection
-		list($query, $params, $forceMaster) = $this->expandQueryParams( $query, $params );
+		list($query, $params) = $this->expandQueryParams( $query, $params );
 
 		$this->reConnect();
 
-		$db = $forceMaster ? $this->dbMaster : $this->chooseDbByQuery($query);
-
 		# Create statement
+		$db = $this->chooseDbByQuery($query);
+		$this->forceMaster = false;
 		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
 			$this->throwDbException("Error preparing statement", $query, $params, $db);
@@ -352,7 +363,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		if ($this->dbSlave == null) {
 			return $this->dbMaster;
 		}
-		if (String::containsInsensitive($query, "m_select")) {
+		if ($this->forceMaster) {
 			return $this->dbMaster;
 		}
 
@@ -384,9 +395,6 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return array (query, params)
 	 */
 	private function expandQueryParams( $query, $params ) {
-		$forceMaster = String::containsInsensitive($query, "m_select");
-		$query = preg_replace("/m_select/i", "SELECT", $query, 1);
-
 		# remove tabs and new lines
 		$query = preg_replace( "/[\t|\n| ]+/", " ", $query );
 
@@ -409,7 +417,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				$newParams[] = $param;
 			}
 		}
-		return array( $query, $newParams, $forceMaster );
+		return array( $query, $newParams );
 	}
 
 	/**
