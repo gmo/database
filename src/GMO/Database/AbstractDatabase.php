@@ -33,7 +33,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 	/** @var int number of affected rows from last query */
 	private $affectedRows;
-	
+
+	/** @var bool Force master connection flag */
+	private $forceMaster;
+
 	/** @var LoggerInterface */
 	protected $log;
 	#endregion
@@ -64,14 +67,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			$data = preg_replace( $comment_patterns, "\n", $data );
 
 			//Retrieve sql statements
-			$stmts = explode( ";\n", $data );
-			$stmts = preg_replace( "/\\s/", " ", $stmts );
+			$stmts = explode( ";", $data );
+			$stmts = preg_replace( '#[^\S\n]#', " ", $stmts );
+			$stmts = preg_replace( "[\n]", "\n\t", $stmts );
 
 			foreach ( $stmts as $query ) {
 				if ( trim( $query ) == "" ) {
 					continue;
 				}
-				$this->log->info( "Executing query: " . $query );
+				$this->log->info( "Executing query:\n\t" . $query );
 				$this->reConnect();
 				$result = $this->chooseDbByQuery($query)->query( $query );
 
@@ -81,9 +85,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 					$this->log->info( "Execution: SUCCESS" );
 				} elseif ( $errno = 1060 ) // Duplicate column
 				{
-					$this->log->info( "Execution: WARNING: " . $errorMsg );
+					$this->log->warning( "Execution: " . $errorMsg );
 				} else {
-					$this->log->info( "Execution: ERROR: " . $errorMsg );
+					$this->log->error( "Execution: " . $errorMsg );
 				}
 				$this->log->info( "============" );
 			}
@@ -101,6 +105,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	#endregion
 
 	#region Query methods
+	/**
+	 * Force next query to use master database connection
+	 * @return $this
+	 */
+	protected function useMaster() {
+		$this->forceMaster = true;
+		return $this;
+	}
+
 	/**
 	 * Returns a single value from the first column
 	 * of the first row of results from query.
@@ -160,7 +173,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	protected function insertAndReturnId( $query, $params = null ) {
 		$this->chooseDbByQuery($query)->query( "start transaction" );
 		call_user_func_array( array( $this, "execute" ), func_get_args() );
-		$id = $this->singleValue( "select last_insert_id() as id" );
+		$id = $this->getInsertId();
 		$this->chooseDbByQuery($query)->query( "commit" );
 
 		return $id;
@@ -187,13 +200,14 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		$params = func_get_args();
 		$query = array_shift( $params );
 
-		# Update query and params with params that have arrays
+		# Update query and params with params that have arrays.
 		list($query, $params) = $this->expandQueryParams( $query, $params );
 
 		$this->reConnect();
 
 		# Create statement
 		$db = $this->chooseDbByQuery($query);
+		$this->forceMaster = false;
 		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
 			$this->throwDbException("Error preparing statement", $query, $params, $db);
@@ -347,6 +361,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 */
 	protected function chooseDbByQuery($query) {
 		if ($this->dbSlave == null) {
+			return $this->dbMaster;
+		}
+		if ($this->forceMaster) {
 			return $this->dbMaster;
 		}
 
