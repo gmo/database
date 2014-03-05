@@ -294,6 +294,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 		if ($args[0] instanceof DbConnection) {
 			$this->dbMasterConnection = $args[0];
+			$this->dbSlaveConnection = $args[0]->getSlave();
 			if (isset($args[1])) {
 				$this->log = $args[1];
 			}
@@ -306,7 +307,9 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			throw new \InvalidArgumentException();
 		}
 
-		$this->dbSlaveConnection = $slaveConnection;
+		if ($slaveConnection) {
+			$this->dbSlaveConnection;
+		}
 
 		if ($this->log == null) {
 			$this->log = new NullLogger();
