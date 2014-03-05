@@ -308,7 +308,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		}
 
 		if ($slaveConnection) {
-			$this->dbSlaveConnection;
+			$this->dbSlaveConnection = $slaveConnection;
 		}
 
 		if ($this->log == null) {
