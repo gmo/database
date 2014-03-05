@@ -370,7 +370,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			return $this->dbMaster;
 		}
 
-		if (String::startsWithInsensitive($query, 'select ') && !$this->isSelectIntoQuery($query)) {
+		if (String::startsWithInsensitive(ltrim($query), 'select ') && !$this->isSelectIntoQuery($query)) {
 			return $this->dbSlave;
 		}
 
