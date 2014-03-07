@@ -20,7 +20,7 @@ class DbConnection {
 		return $this->slave;
 	}
 
-	public function setSlave(DbConnection $connection) {
+	public function setSlave(DbConnection $connection = null) {
 		$this->slave = $connection;
 	}
 
