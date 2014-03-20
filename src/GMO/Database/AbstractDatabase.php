@@ -346,10 +346,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 
 	public function close() {
 		if ($this->dbMaster) {
-			$this->dbMaster->close();
+			@$this->dbMaster->close();
 		}
 		if ($this->dbSlave) {
-			$this->dbSlave->close();
+			@$this->dbSlave->close();
 		}
 	}
 
