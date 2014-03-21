@@ -149,6 +149,48 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	}
 
 	/**
+	 * Returns a list of a single column.
+	 *
+	 * @example keyValueArray("SELECT value FROM Foo");
+	 *
+	 * @param string $query
+	 * @param mixed  $params variable number
+	 * @return array array( value1, value2 )
+	 */
+	protected function singleColumn($query, $params = null) {
+		$result = call_user_func_array(array($this, "execute"), func_get_args());
+		return array_map(function($row) { return reset($row); }, $result);
+	}
+
+	/**
+	 * Returns a key value array.
+	 * This will deduplicate the data based on the key.
+	 * If the query only has one column the keys are set to the values.
+	 * If the query has more than two columns the entire row is used for the values.
+	 *
+	 * @example keyValueArray("SELECT id, value FROM Foo");
+	 *
+	 * @param string $query
+	 * @param mixed  $params variable number
+	 * @return array array( id1 => value1, id2 => value2 )
+	 */
+	protected function keyValueArray($query, $params = null) {
+		$data = call_user_func_array(array($this, "execute"), func_get_args());
+		$result = array();
+		foreach ($data as $row) {
+			if (count($row) === 1) {
+				$value = reset($row);
+			} elseif (count($row) > 2) {
+				$value = $row;
+			} else {
+				$value = end($row);
+			}
+			$result[reset($row)] = $value;
+		}
+		return $result;
+	}
+
+	/**
 	 * Executes a query wrapped in no lock statement
 	 * @param string $query
 	 * @param mixed  $params variable number
