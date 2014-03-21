@@ -77,17 +77,15 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 				}
 				$this->log->info( "Executing query:\n\t" . $query );
 				$this->reConnect();
-				$result = $this->chooseDbByQuery($query)->query( $query );
-
-				$errno = $this->chooseDbByQuery($query)->errno;
-				$errorMsg = $this->chooseDbByQuery($query)->error;
-				if ( $errno == 0 ) {
+				$db = $this->chooseDbByQuery( $query );
+				$db->query( $query );
+				if ( $db->errno == 0 ) {
 					$this->log->info( "Execution: SUCCESS" );
-				} elseif ( $errno = 1060 ) // Duplicate column
+				} elseif ( $db->errno = 1060 ) // Duplicate column
 				{
-					$this->log->warning( "Execution: " . $errorMsg );
+					$this->log->warning( "Execution: " . $db->error );
 				} else {
-					$this->log->error( "Execution: " . $errorMsg );
+					$this->log->error( "Execution: " . $db->error );
 				}
 				$this->log->info( "============" );
 			}
@@ -250,6 +248,10 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 		# Create statement
 		$db = $this->chooseDbByQuery($query);
 		$this->forceMaster = false;
+
+		$connection = $db->thread_id === $this->dbMaster->thread_id ? "master" : "slave";
+		$this->log->debug($query, array('params' => $params, 'connection' => $connection));
+
 		$stmt = $db->prepare( $query );
 		if ( !$stmt ) {
 			$this->throwDbException("Error preparing statement", $query, $params, $db);
