@@ -379,7 +379,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			$connection->getHost(),
 			$connection->getUser(),
 			$connection->getPassword(),
-			$connection->getSchema());
+			$connection->getSchema(),
+			$connection->getPort());
 
 		if ( $mysqli == null || !$mysqli->ping() ) {
 			throw new DatabaseException("Unable to establish connection to database");

@@ -16,6 +16,10 @@ class DbConnection {
 		return $this->schema;
 	}
 
+	public function getPort() {
+		return $this->port;
+	}
+
 	public function getSlave() {
 		return $this->slave;
 	}
@@ -24,12 +28,13 @@ class DbConnection {
 		$this->slave = $connection;
 	}
 
-	public function __construct($user, $password, $host, $schema) {
+	public function __construct($user, $password, $host, $schema, $port = 3306) {
 
 		$this->user = $user;
 		$this->password = $password;
 		$this->host = $host;
 		$this->schema = $schema;
+		$this->port = $port;
 	}
 
 	/**
@@ -46,10 +51,10 @@ class DbConnection {
 		$cls->setSlave($conn->getSlave());
 		return $cls;
 	}
-
 	private $user;
 	private $password;
 	private $host;
 	private $schema;
+	private $port;
 	private $slave;
 } 
