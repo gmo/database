@@ -1,10 +1,10 @@
 <?php
-namespace UnitTest\Database;
+namespace UnitTest;
 
 use GMO\Database\AbstractDatabase;
 use Psr\Log\LoggerInterface;
 
-require_once __DIR__ . "/../../../tester_autoload.php";
+require_once __DIR__ . "/../tester_autoload.php";
 
 class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 
@@ -22,7 +22,7 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	protected function invokeMethod($method, $params) {
-		$db = new \ReflectionClass("\\UnitTest\\Database\\TestableAbstractDatabase");
+		$db = new \ReflectionClass("\\UnitTest\\TestableAbstractDatabase");
 		$method = $db->getMethod($method);
 		$method->setAccessible(true);
 		return $method->invokeArgs($db->newInstance(), $params);
@@ -31,8 +31,8 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 
 //region Master Slave Test
 class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
-	const SLAVE_CLASS_MOCK = '\UnitTest\Database\SlaveDatabaseMock';
-	const MASTER_CLASS_MOCK = '\UnitTest\Database\MasterDatabaseMock';
+	const SLAVE_CLASS_MOCK = '\UnitTest\SlaveDatabaseMock';
+	const MASTER_CLASS_MOCK = '\UnitTest\MasterDatabaseMock';
 
 	public function test_chooseDbByQuery_with_select_and_with_a_slave_db() {
 		$this->assert_slave($this->dbWithSlave, 'SELECT * FROM foo');
@@ -95,10 +95,10 @@ class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	protected function assert_master($db, $query) {
-		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->choseDbByQuery($query));
+		$this->assertInstanceOf(self::MASTER_CLASS_MOCK, $db->chooseDbByQuery($query));
 	}
 	protected function assert_slave($db, $query) {
-		$this->assertInstanceOf(self::SLAVE_CLASS_MOCK, $db->choseDbByQuery($query));
+		$this->assertInstanceOf(self::SLAVE_CLASS_MOCK, $db->chooseDbByQuery($query));
 	}
 
 	protected function setUp() {
