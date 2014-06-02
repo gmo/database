@@ -1,7 +1,7 @@
 <?php
 namespace UnitTest;
 
-use GMO\Database\AbstractDatabase;
+use GMO\Database\MysqlDatabase;
 use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . "/../tester_autoload.php";
@@ -113,7 +113,7 @@ class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
 }
 //endregion
 
-class TestableAbstractDatabase extends AbstractDatabase {
+class TestableAbstractDatabase extends MysqlDatabase {
 	function __construct($slave = null) {
 		$this->setDbMaster(new MasterDatabaseMock());
 		$this->setDbSlave($slave);

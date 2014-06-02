@@ -1,5 +1,5 @@
 <?php
-namespace GMO\Database;
+namespace GMO\Database\Connection;
 
 class SqliteMemPdoDbConnection extends PdoDbConnection {
 
@@ -8,7 +8,7 @@ class SqliteMemPdoDbConnection extends PdoDbConnection {
 	}
 
 	public function __construct() {
-		parent::__construct(null, null, null, ":memory:");
+		parent::__construct(":memory:", null, null, null);
 	}
 
 	public static function fromSelf(DbConnection $conn) {

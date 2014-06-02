@@ -1,5 +1,5 @@
 <?php
-namespace GMO\Database;
+namespace GMO\Database\Connection;
 
 class DbConnection {
 
@@ -28,12 +28,11 @@ class DbConnection {
 		$this->slave = $connection;
 	}
 
-	public function __construct($user, $password, $host, $schema, $port = 3306) {
-
+	public function __construct($schema, $user, $password, $host = "localhost", $port = 3306) {
+		$this->schema = $schema;
 		$this->user = $user;
 		$this->password = $password;
 		$this->host = $host;
-		$this->schema = $schema;
 		$this->port = $port;
 	}
 
@@ -44,6 +43,7 @@ class DbConnection {
 	 */
 	public static function fromSelf(DbConnection $conn) {
 		$cls = get_called_class();
+		/** @var DbConnection $cls */
 		$cls = new $cls($conn->getUser(),
 		                $conn->getPassword(),
 		                $conn->getHost(),
@@ -51,10 +51,12 @@ class DbConnection {
 		$cls->setSlave($conn->getSlave());
 		return $cls;
 	}
+
+	private $schema;
 	private $user;
 	private $password;
 	private $host;
-	private $schema;
 	private $port;
+	/** @var DbConnection */
 	private $slave;
-} 
+}

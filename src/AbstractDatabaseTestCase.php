@@ -1,10 +1,13 @@
 <?php
 namespace GMO\Database;
 
+use GMO\Database\Connection\MySqlPdoDbConnection;
+use GMO\Database\Connection\PdoDbConnection;
+
 abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
 
 	/** @return PdoDbConnection */
-	protected function getPdoDbConnection() {}
+	abstract protected function getPdoDbConnection();
 
 	protected function preSetup() {
 		if(self::$pdoConn instanceof MySqlPdoDbConnection) {
@@ -17,41 +20,20 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 		}
 	}
 
-	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
-	protected function getUsername() { return ""; }
-	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
-	protected function getPassword() { return ""; }
-	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
-	protected function getHost() { return ""; }
-	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
-	protected function getDatabase() { return ""; }
-
 	/**
 	 * Returns the test database connection.
 	 * @return \PHPUnit_Extensions_Database_DB_IDatabaseConnection
 	 */
 	protected function getConnection() {
-
-		if ( $this->conn === null ) {
-
-			$pdoConn = $this->getPdoDbConnection();
-			if ($pdoConn == null) {
-				$pdoConn = new MySqlPdoDbConnection(
-					$this->getUsername(),
-					$this->getPassword(),
-					$this->getHost(),
-					$this->getDatabase()
-				);
-			}
-
-			if ( self::$pdo == null || $pdoConn !== self::$pdoConn) {
-				self::$pdo = new \PDO( $pdoConn->getDsn(), $pdoConn->getUser(), $pdoConn->getPassword() );
-				self::$pdoConn = $pdoConn;
-			}
-
-			$this->conn = $this->createDefaultDBConnection( self::$pdo, $pdoConn->getSchema() );
+		if ( $this->conn !== null ) {
+			return $this->conn;
 		}
-
+		$pdoConn = $this->getPdoDbConnection();
+		if (self::$pdo == null || $pdoConn !== self::$pdoConn) {
+			self::$pdo = new \PDO( $pdoConn->getDsn(), $pdoConn->getUser(), $pdoConn->getPassword() );
+			self::$pdoConn = $pdoConn;
+		}
+		$this->conn = $this->createDefaultDBConnection( self::$pdo, $pdoConn->getSchema() );
 		return $this->conn;
 	}
 

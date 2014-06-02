@@ -1,5 +1,5 @@
 <?php
-namespace GMO\Database;
+namespace GMO\Database\Connection;
 
 abstract class PdoDbConnection extends DbConnection {
 

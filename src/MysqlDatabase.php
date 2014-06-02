@@ -2,6 +2,8 @@
 namespace GMO\Database;
 
 use GMO\Common\String;
+use GMO\Database\Connection\DbConnection;
+use GMO\Database\Exception\DatabaseException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -16,9 +18,9 @@ class MysqlDatabase extends AbstractDatabase {
 	/** @var \mysqli */
 	private $dbSlave;
 
-	/** @var \GMO\Database\DbConnection */
+	/** @var DbConnection */
 	private $dbMasterConnection;
-	/** @var \GMO\Database\DbConnection|null */
+	/** @var DbConnection|null */
 	private $dbSlaveConnection;
 
 	/** @var int number of affected rows from last query */
@@ -201,36 +203,13 @@ class MysqlDatabase extends AbstractDatabase {
 	}
 
 	/**
-	 * @param DbConnection|mixed   $connection Takes a DbConnection or host, user, password, schema
+	 * @param DbConnection         $connection
 	 * @param LoggerInterface|null $logger
-	 * @param DbConnection         $slaveConnection
-	 * @throws \InvalidArgumentException
 	 */
-	function __construct($connection, $logger = null, $slaveConnection = null) {
-		$args = func_get_args();
-
-		if ($args[0] instanceof DbConnection) {
-			$this->dbMasterConnection = $args[0];
-			$this->dbSlaveConnection = $args[0]->getSlave();
-			if (isset($args[1])) {
-				$this->log = $args[1];
-			}
-		} elseif (count($args) == 4 || count($args) == 5) {
-			$this->dbMasterConnection = new DbConnection($args[3], $args[1], $args[2], $args[0]);
-			if (isset($args[4])) {
-				$this->log = $args[4];
-			}
-		} else {
-			throw new \InvalidArgumentException();
-		}
-
-		if ($slaveConnection) {
-			$this->dbSlaveConnection = $slaveConnection;
-		}
-
-		if ($this->log == null) {
-			$this->log = new NullLogger();
-		}
+	public function __construct(DbConnection $connection, LoggerInterface $logger = null) {
+		$this->dbMasterConnection = $connection;
+		$this->dbSlaveConnection = $connection->getSlave();
+		$this->setLogger($logger ?: new NullLogger());
 
 		$this->dbMaster = $this->openConnection($this->dbMasterConnection);
 		$this->dbSlave = $this->openConnection($this->dbSlaveConnection);
@@ -238,7 +217,7 @@ class MysqlDatabase extends AbstractDatabase {
 
 	/**
 	 * Creates a \mysqli connection from DbConnection and verifies the connection is established.
-	 * If connection is invalid a DatabaseException is thrown. Returns null if $connnection is null
+	 * If connection is invalid a DatabaseException is thrown. Returns null if $connection is null
 	 * @param DbConnection $connection
 	 * @throws DatabaseException
 	 * @return \mysqli|null
@@ -379,7 +358,7 @@ class MysqlDatabase extends AbstractDatabase {
 	 * @param \mysqli_stmt $stmt
 	 * @return array
 	 */
-	private function getResultsFromStmt($stmt) {
+	private function getResultsFromStmt(\mysqli_stmt $stmt) {
 		# Get metadata for field names
 		$meta = $stmt->result_metadata();
 

@@ -1,6 +1,7 @@
 <?php
 namespace GMO\Database;
 
+use GMO\Database\Exception\DatabaseException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
