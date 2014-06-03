@@ -42,7 +42,7 @@ interface IDatabase extends LoggerAwareInterface {
 	 * @param $callback callable with IDatabase argument passed to it
 	 * @return mixed
 	 */
-	public function withTransaction($callback);
+	public function withTransaction(callable $callback);
 
 	/**
 	 * Returns a single value from the first column

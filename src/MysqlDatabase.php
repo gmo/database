@@ -79,7 +79,7 @@ class MysqlDatabase extends AbstractDatabase {
 	}
 
 	/** @inheritdoc */
-	public function withTransaction($callback) {
+	public function withTransaction(callable $callback) {
 		$this->dbMaster->autocommit(false);
 		$oldSlave = $this->dbSlave;
 		$this->dbSlave = $this->dbMaster;
@@ -296,7 +296,7 @@ class MysqlDatabase extends AbstractDatabase {
 	 * @param $params
 	 * @return \mysqli_stmt
 	 */
-	private function bindParamsToStmt($stmt, $params) {
+	private function bindParamsToStmt(\mysqli_stmt $stmt, $params) {
 		if (empty($params)) {
 			return $stmt;
 		}
