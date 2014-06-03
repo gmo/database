@@ -1,13 +1,15 @@
 <?php
 namespace GMO\Database;
 
-use GMO\Database\Exception\DatabaseException;
+use GMO\Database\Exception\ConnectionException;
+use GMO\Database\Exception\QueryException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Database interface designed to provide basic query functions.
  * @package GMO\Database
+ * @since 2.0.0
  */
 interface IDatabase extends LoggerAwareInterface {
 	/**
@@ -49,7 +51,8 @@ interface IDatabase extends LoggerAwareInterface {
 	 * of the first row of results from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws DatabaseException if query fails
+	 * @throws QueryException if query fails
+	 * @throws ConnectionException if reconnection fails
 	 * @return mixed
 	 */
 	public function singleValue($query, $params = null);
@@ -59,7 +62,8 @@ interface IDatabase extends LoggerAwareInterface {
 	 * of results from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws DatabaseException if query fails
+	 * @throws QueryException if query fails
+	 * @throws ConnectionException if reconnection fails
 	 * @return array
 	 */
 	public function singleRow($query, $params = null);
@@ -89,7 +93,8 @@ interface IDatabase extends LoggerAwareInterface {
 	 * Inserts a row and returns the id
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws DatabaseException if query fails
+	 * @throws QueryException if query fails
+	 * @throws ConnectionException if reconnection fails
 	 * @return array
 	 */
 	public function insertAndReturnId($query, $params = null);
@@ -105,7 +110,8 @@ interface IDatabase extends LoggerAwareInterface {
 	 * from query.
 	 * @param string $query
 	 * @param mixed  $params variable number
-	 * @throws DatabaseException if query fails
+	 * @throws QueryException if query fails
+	 * @throws ConnectionException if reconnection fails
 	 * @return array
 	 */
 	public function execute($query, $params = null);

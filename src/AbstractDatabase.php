@@ -1,10 +1,15 @@
 <?php
 namespace GMO\Database;
 
+use GMO\Database\Exception\QueryException;
 use Psr\Log\LoggerInterface;
 
 /**
+ * Implements some of the {@see IDatabase} interface to keep code DRY,
+ * such as some of the query shortcut methods and flag variables for fluent methods.
+ *
  * @package GMO\Database
+ * @since 2.0.0
  */
 abstract class AbstractDatabase implements IDatabase {
 
@@ -132,5 +137,24 @@ abstract class AbstractDatabase implements IDatabase {
 		$string = substr($string, 0, -2);
 
 		return $string;
+	}
+
+	/**
+	 * Throw {@see QueryException} and log error
+	 * @param string $msg
+	 * @param string $query
+	 * @param array  $params
+	 * @param string $errorMsg
+	 * @param int    $errorCode
+	 * @throws QueryException
+	 */
+	protected function throwQueryException($msg, $query, $params, $errorMsg, $errorCode) {
+		$this->log->error($msg, array(
+			"query" => $query,
+			"params" => $params,
+			"error" => $errorMsg,
+			"errorNum" => $errorCode
+		));
+		throw new QueryException($errorMsg, $errorCode);
 	}
 }

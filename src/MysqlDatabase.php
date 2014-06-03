@@ -3,12 +3,19 @@ namespace GMO\Database;
 
 use GMO\Common\String;
 use GMO\Database\Connection\DbConnection;
-use GMO\Database\Exception\DatabaseException;
+use GMO\Database\Exception\ConnectionException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
+ * MySQL implementation of {@see IDatabase}.
+ *
+ * Handles master/slave connections, reconnection logic,
+ * and mysqli crappiness around binding parameters
+ * and getting results.
+ *
  * @package GMO\Database
+ * @since 2.0.0
  */
 class MysqlDatabase extends AbstractDatabase {
 
@@ -130,7 +137,7 @@ class MysqlDatabase extends AbstractDatabase {
 		$stmt = $db->prepare( $query );
 		if (!$stmt) {
 			$this->closeNoLock($db);
-			$this->throwDbException("Error preparing statement", $query, $params, $db);
+			$this->throwQueryException("Error preparing statement", $query, $params, $db->error, $db->errno);
 		}
 
 		$stmt = $this->bindParamsToStmt($stmt, $params);
@@ -138,7 +145,7 @@ class MysqlDatabase extends AbstractDatabase {
 		# Execute query
 		if (!$stmt->execute()) {
 			$this->closeNoLock($db);
-			$this->throwDbException("Error executing statement", $query, $params, $stmt);
+			$this->throwQueryException("Error executing statement", $query, $params, $stmt->error, $stmt->errno);
 		}
 
 		# Get results from statement
@@ -163,7 +170,7 @@ class MysqlDatabase extends AbstractDatabase {
 	/**
 	 * If ping returns false or throws an exception
 	 * it will try to reopen connection
-	 * @throws DatabaseException if openConnection fails
+	 * @throws ConnectionException if openConnection fails
 	 */
 	protected function reConnect() {
 		try {
@@ -216,10 +223,10 @@ class MysqlDatabase extends AbstractDatabase {
 	}
 
 	/**
-	 * Creates a \mysqli connection from DbConnection and verifies the connection is established.
-	 * If connection is invalid a DatabaseException is thrown. Returns null if $connection is null
+	 * Creates a {@see \mysqli} connection from DbConnection and verifies the connection is established.
+	 * If connection is invalid a {@see ConnectionException} is thrown. Returns null if $connection is null
 	 * @param DbConnection $connection
-	 * @throws DatabaseException
+	 * @throws ConnectionException
 	 * @return \mysqli|null
 	 */
 	private function openConnection(DbConnection $connection = null) {
@@ -235,7 +242,7 @@ class MysqlDatabase extends AbstractDatabase {
 			$connection->getPort());
 
 		if ($mysqli == null || !$mysqli->ping()) {
-			throw new DatabaseException("Unable to establish connection to database");
+			throw new ConnectionException();
 		}
 
 		return $mysqli;
@@ -390,24 +397,6 @@ class MysqlDatabase extends AbstractDatabase {
 		}
 		$meta->free();
 		return $results;
-	}
-
-	/**
-	 * Throw DatabaseException and log error
-	 * @param string               $msg
-	 * @param string               $query
-	 * @param array                $params
-	 * @param \mysqli|\mysqli_stmt $db
-	 * @throws DatabaseException
-	 */
-	private function throwDbException($msg, $query, $params, $db) {
-		$this->log->error($msg, array(
-			"query" => $query,
-			"params" => $params,
-			"error" => $db->error,
-			"errorNum" => $db->errno
-		));
-		throw new DatabaseException($db->error, $db->errno);
 	}
 
 	private function openNoLock(\mysqli $db) {

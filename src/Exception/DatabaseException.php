@@ -2,7 +2,8 @@
 namespace GMO\Database\Exception;
 
 /**
- * Class DatabaseException
+ * Base {@see Exception} for Database library.
  * @package GMO\Database
+ * @since 2.0.0
  */
 class DatabaseException extends \Exception { }
