@@ -11,7 +11,7 @@
 		"phpunit/dbunit":  "1.2.*"
 	},
 	"autoload": {
-		"psr-0": {
+		"psr-4": {
 			"GMO\\Database\\": "src/"
 		}
 	}
