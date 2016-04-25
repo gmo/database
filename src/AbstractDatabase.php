@@ -1,7 +1,7 @@
 <?php
 namespace GMO\Database;
 
-use GMO\Common\String;
+use GMO\Common\Str;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -419,7 +419,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			return $this->dbMaster;
 		}
 
-		if (String::startsWithInsensitive(ltrim($query), 'select ') && !$this->isSelectIntoQuery($query)) {
+		if (Str::startsWithInsensitive(ltrim($query), 'select ') && !$this->isSelectIntoQuery($query)) {
 			return $this->dbSlave;
 		}
 
@@ -432,8 +432,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return boolean
 	 */
 	private function isSelectIntoQuery($query) {
-		return String::containsInsensitive($query, 'into outfile') ||
-		       String::containsInsensitive($query, 'into dumpfile');
+		return Str::containsInsensitive($query, 'into outfile') ||
+		       Str::containsInsensitive($query, 'into dumpfile');
 	}
 	#endregion
 
