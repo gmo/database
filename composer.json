@@ -2,19 +2,17 @@
 	"name": "gmo/database",
 	"description": "Common database abstraction providing simple query methods",
 	"require": {
-		"psr/log": "1.0.0",
-		"gmo/common": "~1.6"
+		"gmo/common": "~1.6",
+		"php": ">=5.3.3",
+		"psr/log": "1.0.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "3.7.*",
 		"phpunit/dbunit":  "1.2.*"
 	},
 	"autoload": {
-		"psr-4": {
+		"psr-0": {
 			"GMO\\Database\\": "src/"
 		}
-	},
-	"repositories": [
-		{ "type": "git", "url": "git@bitbucket.org:gmodev/common-library.git" }
-	]
+	}
 }
