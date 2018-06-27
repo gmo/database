@@ -2,10 +2,10 @@
 
 require_once __DIR__ . "/tester_autoload.php";
 
-class SqlLiteMemDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase {
+class SqlLiteMemDatabaseTestCase extends \Gmo\Database\AbstractDatabaseTestCase {
 
 	protected function  getPdoDbConnection() {
-		return new \GMO\Database\SqliteMemPdoDbConnection();
+		return new \Gmo\Database\SqliteMemPdoDbConnection();
 	}
 	protected function preSetup() {
 		parent::preSetup();

@@ -1,5 +1,5 @@
 <?php
-namespace GMO\Database;
+namespace Gmo\Database;
 
 use Gmo\Common\Str;
 use Psr\Log\LoggerAwareInterface;

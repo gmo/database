@@ -1,7 +1,7 @@
 <?php
 namespace UnitTest\Database;
 
-use GMO\Database\AbstractDatabase;
+use Gmo\Database\AbstractDatabase;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

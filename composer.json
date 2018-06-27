@@ -12,7 +12,7 @@
 	},
 	"autoload": {
 		"psr-0": {
-			"GMO\\Database\\": "src/"
+			"Gmo\\Database\\": "src/"
 		}
 	},
 	"repositories": [

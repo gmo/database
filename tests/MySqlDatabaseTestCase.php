@@ -2,10 +2,10 @@
 
 require_once __DIR__ . "/tester_autoload.php";
 
-class MySqlDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase {
+class MySqlDatabaseTestCase extends \Gmo\Database\AbstractDatabaseTestCase {
 
 	protected function  getPdoDbConnection() {
-		return new \GMO\Database\MySqlPdoDbConnection("unittestuser", "Password1", "127.0.0.1", "db-lib-test");
+		return new \Gmo\Database\MySqlPdoDbConnection("unittestuser", "Password1", "127.0.0.1", "db-lib-test");
 	}
 
 	/**
@@ -25,7 +25,7 @@ class MySqlDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase {
 }
 
 /** @deprecated Remove in v2.0.0 */
-class MySqlDatabaseTestCase_Deprecated_Test extends \GMO\Database\AbstractDatabaseTestCase {
+class MySqlDatabaseTestCase_Deprecated_Test extends \Gmo\Database\AbstractDatabaseTestCase {
 
 	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
 	protected function getUsername() { return "unittestuser"; }

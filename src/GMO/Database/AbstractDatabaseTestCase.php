@@ -1,5 +1,5 @@
 <?php
-namespace GMO\Database;
+namespace Gmo\Database;
 
 use PHPUnit\DbUnit\Database\Connection;
 use PHPUnit\DbUnit\TestCase;
