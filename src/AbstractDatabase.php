@@ -1,7 +1,7 @@
 <?php
-namespace GMO\Database;
+namespace Gmo\Database;
 
-use GMO\Common\Str;
+use Gmo\Common\Str;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -208,7 +208,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @param string $query
 	 * @param mixed  $params variable number
 	 * @throws DatabaseException if query fails
-	 * @return array
+	 * @return int
 	 */
 	protected function insertAndReturnId( $query, $params = null ) {
 		$this->chooseDbByQuery($query)->query( "start transaction" );
@@ -419,7 +419,7 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 			return $this->dbMaster;
 		}
 
-		if (Str::startsWithInsensitive(ltrim($query), 'select ') && !$this->isSelectIntoQuery($query)) {
+		if (Str::startsWith(ltrim($query), 'select ', true) && !$this->isSelectIntoQuery($query)) {
 			return $this->dbSlave;
 		}
 
@@ -432,8 +432,8 @@ abstract class AbstractDatabase implements LoggerAwareInterface {
 	 * @return boolean
 	 */
 	private function isSelectIntoQuery($query) {
-		return Str::containsInsensitive($query, 'into outfile') ||
-		       Str::containsInsensitive($query, 'into dumpfile');
+		return Str::contains($query, 'into outfile', true) ||
+		       Str::contains($query, 'into dumpfile', true);
 	}
 	#endregion
 

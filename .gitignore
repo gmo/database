@@ -2,3 +2,5 @@ vendor
 workspace.xml
 atlassian-ide-plugin.xml
 composer.lock
+.idea
+.project

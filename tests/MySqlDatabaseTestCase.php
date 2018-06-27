@@ -2,18 +2,18 @@
 
 require_once __DIR__ . "/tester_autoload.php";
 
-class MySqlDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase {
+class MySqlDatabaseTestCase extends \Gmo\Database\AbstractDatabaseTestCase {
 
 	protected function  getPdoDbConnection() {
-		return new \GMO\Database\MySqlPdoDbConnection("unittestuser", "Password1", "127.0.0.1", "db-lib-test");
+		return new \Gmo\Database\MySqlPdoDbConnection("unittestuser", "Password1", "127.0.0.1", "db-lib-test");
 	}
 
 	/**
 	 * Returns the test dataset.
-	 * @return PHPUnit_Extensions_Database_DataSet_IDataSet
+	 * @return \PHPUnit\DbUnit\DataSet\AbstractDataSet
 	 */
 	protected function getDataSet() {
-		return new PHPUnit_Extensions_Database_DataSet_YamlDataSet(
+		return new \PHPUnit\DbUnit\DataSet\YamlDataSet(
 			__DIR__ . "/data/guestbook.yml"
 		);
 	}
@@ -25,7 +25,7 @@ class MySqlDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase {
 }
 
 /** @deprecated Remove in v2.0.0 */
-class MySqlDatabaseTestCase_Deprecated_Test extends \GMO\Database\AbstractDatabaseTestCase {
+class MySqlDatabaseTestCase_Deprecated_Test extends \Gmo\Database\AbstractDatabaseTestCase {
 
 	/** @deprecated Remove in v2.0.0 use getPdoDbConnection */
 	protected function getUsername() { return "unittestuser"; }
@@ -38,10 +38,10 @@ class MySqlDatabaseTestCase_Deprecated_Test extends \GMO\Database\AbstractDataba
 
 	/**
 	 * Returns the test dataset.
-	 * @return PHPUnit_Extensions_Database_DataSet_IDataSet
+	 * @return \PHPUnit\DbUnit\DataSet\AbstractDataSet
 	 */
 	protected function getDataSet() {
-		return new PHPUnit_Extensions_Database_DataSet_YamlDataSet(
+		return new \PHPUnit\DbUnit\DataSet\YamlDataSet(
 			__DIR__ . "/data/guestbook.yml"
 		);
 	}

@@ -1,12 +1,13 @@
 <?php
 namespace UnitTest;
 
-use GMO\Database\AbstractDatabase;
+use Gmo\Database\AbstractDatabase;
+use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . "/../tester_autoload.php";
 
-class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
+class AbstractDatabaseTest extends TestCase {
 
 	public function testExpandQueryParamsWithArray() {
 		$query = "SELECT * from FOO WHERE something IN (??) AND color = ?";
@@ -30,9 +31,9 @@ class AbstractDatabaseTest extends \PHPUnit_Framework_TestCase {
 }
 
 //region Master Slave Test
-class MasterSlaveTest extends \PHPUnit_Framework_TestCase {
-	const SLAVE_CLASS_MOCK = '\UnitTest\SlaveDatabaseMock';
-	const MASTER_CLASS_MOCK = '\UnitTest\MasterDatabaseMock';
+class MasterSlaveTest extends TestCase {
+	const SLAVE_CLASS_MOCK = '\UnitTest\Database\SlaveDatabaseMock';
+	const MASTER_CLASS_MOCK = '\UnitTest\Database\MasterDatabaseMock';
 
 	public function test_chooseDbByQuery_with_select_and_with_a_slave_db() {
 		$this->assert_slave($this->dbWithSlave, 'SELECT * FROM foo');
