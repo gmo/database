@@ -19,10 +19,10 @@ class SqlLiteMemDatabaseTestCase extends \GMO\Database\AbstractDatabaseTestCase 
 
 	/**
 	 * Returns the test dataset.
-	 * @return PHPUnit_Extensions_Database_DataSet_IDataSet
+	 * @return \PHPUnit\DbUnit\DataSet\AbstractDataSet
 	 */
 	protected function getDataSet() {
-		return new PHPUnit_Extensions_Database_DataSet_YamlDataSet(
+		return new \PHPUnit\DbUnit\DataSet\YamlDataSet(
 			__DIR__ . "/data/guestbook.yml"
 		);
 	}

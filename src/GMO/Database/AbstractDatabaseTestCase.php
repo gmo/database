@@ -1,7 +1,10 @@
 <?php
 namespace GMO\Database;
 
-abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_TestCase {
+use PHPUnit\DbUnit\Database\Connection;
+use PHPUnit\DbUnit\TestCase;
+
+abstract class AbstractDatabaseTestCase extends TestCase {
 
 	/** @return PdoDbConnection */
 	protected function getPdoDbConnection() {}
@@ -28,7 +31,7 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 
 	/**
 	 * Returns the test database connection.
-	 * @return \PHPUnit_Extensions_Database_DB_IDatabaseConnection
+	 * @return Connection
 	 */
 	protected function getConnection() {
 
@@ -85,6 +88,6 @@ abstract class AbstractDatabaseTestCase extends \PHPUnit_Extensions_Database_Tes
 	static private $pdo = null;
 	static private $pdoConn;
 	# Only instantiate PHPUnit_Extensions_Database_DB_IDatabaseConnection once per test
-	/** @var \PHPUnit_Extensions_Database_DB_IDatabaseConnection */
+	/** @var Connection */
 	private $conn = null;
 }
